@@ -1,0 +1,11 @@
+.linksSection {
+  margin-bottom: 4rem;
+  /* Väldib horisontaalset kerimisriba animatsiooni ajal */
+  overflow-x: hidden;
+}
+
+.linkWrapper {
+  text-decoration: none;
+  color: inherit;
+  display: block; /* Vajalik, et link võtaks enda alla terve kaardi ala */
+}

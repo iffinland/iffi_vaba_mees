@@ -1,0 +1,24 @@
+.container {
+  padding: 2rem 0;
+}
+
+.title {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+.container p {
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.optionsSection {
+  margin-top: 3rem;
+  overflow-x: hidden; /* For lazy load animation */
+}
+
+.linkWrapper {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}

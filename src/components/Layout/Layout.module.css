@@ -1,0 +1,49 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.textColumn {
+  width: 45%; /* Desktopis on teksti osa veidi väiksem */
+  padding: 2rem 4rem;
+  box-sizing: border-box;
+  flex-shrink: 0; /* Väldib veeru kokku tõmbumist */
+  transition: width 0.5s ease-in-out; /* Sujuv üleminek laiuse muutmisel */
+}
+
+.collageColumn {
+  width: 55%;
+  position: relative;
+  flex-shrink: 0; /* Väldib veeru kokku tõmbumist */
+  transition: width 0.5s ease-in-out; /* Sujuv üleminek laiuse muutmisel */
+}
+
+.collageImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Tagab, et pilt katab kogu ala */
+  position: absolute;
+}
+
+/* --- Responsiivsus --- */
+
+/* Tabletid */
+@media (max-width: 1024px) {
+  .textColumn {
+    width: 80%;
+    padding: 2rem;
+  }
+  .collageColumn {
+    width: 20%;
+  }
+}
+
+/* Mobiilid */
+@media (max-width: 768px) {
+  .textColumn {
+    width: 90%;
+  }
+  .collageColumn {
+    width: 10%;
+  }
+}

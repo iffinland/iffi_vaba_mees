@@ -1,0 +1,59 @@
+.header {
+  padding-top: 10vh; /* 10% ülevalt servast */
+  margin-bottom: 4rem;
+  /* Uus, paindlikum lahendus */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap; /* See on võtmemuudatus: lubab reamurdmist kui ruumi napib */
+  gap: 2rem 4rem; /* Ühtlane vahe: 2rem ridade vahel, 4rem elementide vahel */
+}
+
+.siteNameLink {
+  text-decoration: none;
+  color: inherit;
+}
+
+.siteName {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0; /* Eemaldame vaikimisi marginaali */
+  white-space: nowrap; /* Väldib pealkirja murdumist */
+}
+
+.navigation {
+  display: flex;
+  gap: 1.5rem;
+  /* Tagab, et nupurida ei murduks ise mitmele reale */
+  flex-wrap: nowrap;
+}
+
+.navButton {
+  border-radius: 50%; /* Ümmargune nupp */
+  width: 60px;  /* Muudetud veel 15% väiksemaks */
+  height: 60px; /* Muudetud veel 15% väiksemaks */
+  border: none;
+  background-color: #fff;
+  cursor: pointer;
+  /* Uued stiilid ikooni paigutamiseks ja suuruse määramiseks */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.8rem; /* See määrab ikooni suuruse nupu sees */
+  color: #333; /* Ikooni värv */
+  /* Uuendatud, mitmekihiline vari, mis loob sügavuse ja "kõrguse" efekti */
+  box-shadow: 0px 25px 50px rgba(0, 0, 0, 0.25), 0px 10px 20px rgba(0, 0, 0, 0.2);
+  /* Lisame ka box-shadow omaduse sujuvaks üleminekuks */
+  transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+.navButton:hover {
+  /* Hiirega üle minnes muudame varju veelgi tugevamaks, et nupp "tõuseks" */
+  box-shadow: 0px 35px 60px rgba(0, 0, 0, 0.3), 0px 15px 35px rgba(0, 0, 0, 0.25);
+  color: #007bff; /* Muudame ikooni värvi siniseks */
+}
+
+.navButton:active {
+  transform: scale(0.90); /* Liigub "taha poole" - väärtus alla 1 teeb väiksemaks */
+}
+
+/* Meediapäringut pole enam vaja, flex-wrap lahendab paigutuse automaatselt! */

@@ -1,0 +1,54 @@
+.welcomeSection {
+  margin-bottom: 4rem;
+}
+
+.titleContainer {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  /* Sama vari ja üleminek nagu päise nuppudel */
+  box-shadow: 0px 25px 50px rgba(0, 0, 0, 0.25), 0px 10px 20px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.avatar:hover {
+  transform: scale(1.05); /* Tõuseb esile */
+  box-shadow: 0px 35px 60px rgba(0, 0, 0, 0.3), 0px 15px 35px rgba(0, 0, 0, 0.25);
+}
+
+.titleContainer h2 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.welcomeSection p {
+  line-height: 1.6;
+}
+
+.chatButton {
+  margin-top: 2rem;
+  padding: 0.8rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
+  background-color: #fff;
+  border: none;
+  border-radius: 50px; /* Muudetud täiesti ümaraks */
+  cursor: pointer;
+  /* Sama vari ja üleminek nagu teistel elementidel */
+  box-shadow: 0px 25px 50px rgba(0, 0, 0, 0.25), 0px 10px 20px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.chatButton:hover {
+  transform: scale(1.05); /* Tõuseb esile */
+  box-shadow: 0px 35px 60px rgba(0, 0, 0, 0.3), 0px 15px 35px rgba(0, 0, 0, 0.25);
+}
