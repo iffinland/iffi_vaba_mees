@@ -9,6 +9,8 @@ import { useVideoComments } from '../../hooks/useVideoComments';
 import { useVideos } from '../../hooks/useVideos';
 import styles from './VideosPage.module.css';
 
+const OWNER_QORTAL_NAME = 'iffi vaba mees';
+
 function VideosPage() {
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [toast, setToast] = useState('');
@@ -37,6 +39,7 @@ function VideosPage() {
 
   const comments = useVideoComments({ profile, notify });
   const tip = useQortTip({ notify });
+  const canPublishVideos = profile.name.trim().toLowerCase() === OWNER_QORTAL_NAME;
 
   const playlists = useMemo(
     () => filteredVideos.map((video) => video.playlist).filter(Boolean),
@@ -80,10 +83,12 @@ function VideosPage() {
             each card.
           </p>
         </div>
-        <button type="button" className={styles.publishButton} onClick={() => setIsPublishOpen(true)}>
-          <FaPlus />
-          <span>Publish video</span>
-        </button>
+        {canPublishVideos && (
+          <button type="button" className={styles.publishButton} onClick={() => setIsPublishOpen(true)}>
+            <FaPlus />
+            <span>Publish video</span>
+          </button>
+        )}
       </div>
 
       <div className={styles.toolbar}>
@@ -139,7 +144,7 @@ function VideosPage() {
       </div>
 
       <VideoPublishModal
-        isOpen={isPublishOpen}
+        isOpen={canPublishVideos && isPublishOpen}
         isPublishing={isPublishing}
         onClose={() => setIsPublishOpen(false)}
         onPublish={handlePublish}
