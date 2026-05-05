@@ -1,0 +1,50 @@
+.editorShell {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  background: #f7f7f7;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.toolbar button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: #fff;
+  color: #333;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.toolbar button:hover {
+  background: #ffe082;
+}
+
+.toolbar button:active {
+  transform: scale(0.92);
+}
+
+.editor {
+  min-height: 130px;
+  padding: 0.85rem;
+  outline: none;
+  line-height: 1.6;
+}
+
+.editor:empty::before {
+  content: attr(data-placeholder);
+  color: #888;
+}

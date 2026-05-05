@@ -16,10 +16,9 @@ function Header() {
         <a href="qortal://APP/Q-Blog/iffi%20vaba%20mees/q-blog-iffi%20vaba%20mees" className={styles.navButton} aria-label="Q-Blog">
           <FaPenSquare />
         </a>
-        {/* Videote leht tuleb hiljem, praegu ei vii kuhugi */}
-        <a href="qortal://APP/Q-Tube/channel/iffi%20vaba%20mees" className={styles.navButton} aria-label="Q-Tube">
+        <Link to="/videos" className={styles.navButton} aria-label="Videos">
           <FaVideo />
-        </a>
+        </Link>
         <a href="qortal://APP/Q-Mail/to/iffi%20vaba%20mees" className={styles.navButton} aria-label="Q-Mail">
           <FaEnvelope />
         </a>

@@ -9,9 +9,6 @@ const resolveQortalRequest = () => {
   if (typeof globalThis !== 'undefined' && typeof globalThis.qortalRequest === 'function') {
     return globalThis.qortalRequest;
   }
-  if (typeof qortalRequest !== 'undefined') {
-    return qortalRequest;
-  }
   throw new Error('qortalRequest API is not available. Open the Qortal UI first.');
 };
 
@@ -20,8 +17,8 @@ const encodeObjectToBase64 = (payload) => {
   if (typeof btoa === 'function') {
     return btoa(unescape(encodeURIComponent(json)));
   }
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(json, 'utf-8').toString('base64');
+  if (typeof globalThis !== 'undefined' && globalThis.Buffer) {
+    return globalThis.Buffer.from(json, 'utf-8').toString('base64');
   }
   throw new Error('Unable to encode payload to base64.');
 };

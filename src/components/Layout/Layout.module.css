@@ -25,6 +25,15 @@
   position: absolute;
 }
 
+.widePage {
+  justify-content: center;
+}
+
+.widePage .textColumn {
+  width: min(80vw, 1320px);
+  padding: 2rem 0 3rem;
+}
+
 /* --- Responsiivsus --- */
 
 /* Tabletid */
@@ -45,5 +54,10 @@
   }
   .collageColumn {
     width: 10%;
+  }
+
+  .widePage .textColumn {
+    width: min(94vw, 1320px);
+    padding: 1.5rem 0 2.5rem;
   }
 }

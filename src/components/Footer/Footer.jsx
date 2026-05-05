@@ -10,6 +10,7 @@ function Footer() {
         <Link to="/post/my-world">My World</Link>
         <Link to="/projects">Projects</Link>
         <Link to="/gallery">Gallery</Link>
+        <Link to="/videos">Videos</Link>
         <Link to="/contact">Contact</Link>
         <Link to="/guestbook">Guestbook</Link>
       </nav>

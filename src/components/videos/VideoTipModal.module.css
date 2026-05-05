@@ -1,0 +1,89 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.46);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1001;
+}
+
+.modal {
+  width: min(420px, 100%);
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.24);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.header h2 {
+  margin: 0;
+}
+
+.header button {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: #f2f2f2;
+  cursor: pointer;
+}
+
+.infoBox {
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  background: #f8f8f8;
+  padding: 0.9rem;
+  margin-bottom: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.infoBox span,
+.infoBox small {
+  color: #666;
+}
+
+.amountField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-weight: 700;
+}
+
+.amountField input {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 0.78rem;
+  font: inherit;
+}
+
+.sendButton {
+  width: 100%;
+  margin-top: 1rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.82rem 1.2rem;
+  background: linear-gradient(120deg, #ffe082, #ffd54f);
+  color: #333;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.error {
+  margin: 0.8rem 0 0;
+  color: #b71c1c;
+  background: rgba(183, 28, 28, 0.08);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+}
