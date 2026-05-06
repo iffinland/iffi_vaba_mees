@@ -1,0 +1,214 @@
+.page {
+  width: 100%;
+  padding-bottom: 1rem;
+}
+
+.backLink {
+  display: inline-flex;
+  margin-bottom: 1.25rem;
+  color: #333;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2.7rem;
+  line-height: 1.05;
+}
+
+.description {
+  max-width: 760px;
+  color: #555;
+  line-height: 1.65;
+}
+
+.editButton,
+.imageActions button,
+.navButton {
+  border: none;
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.editButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 1.1rem;
+  background: #ffe082;
+  color: #333;
+  white-space: nowrap;
+}
+
+.viewer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.stage {
+  min-height: min(68vh, 680px);
+  border-radius: 8px;
+  background: #191919;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  overflow: hidden;
+}
+
+.stage img {
+  width: 100%;
+  height: min(68vh, 680px);
+  object-fit: contain;
+  display: block;
+}
+
+.navButton {
+  width: 46px;
+  height: 46px;
+  margin: 0 0.75rem;
+  background: rgba(255, 224, 130, 0.92);
+  color: #333;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbnails {
+  max-height: min(68vh, 680px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding-right: 0.2rem;
+}
+
+.thumbnails button {
+  border: 3px solid transparent;
+  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.thumbnails img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+.activeThumbnail {
+  border-color: #ffe082 !important;
+}
+
+.imageMeta {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem 1.15rem;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
+}
+
+.imageMeta p {
+  margin: 0;
+  color: #333;
+  line-height: 1.6;
+}
+
+.imageActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.imageActions button {
+  width: 42px;
+  height: 42px;
+  background: #efefef;
+  color: #333;
+}
+
+.imageActions button:hover {
+  background: #ffe082;
+}
+
+.fullView .viewer {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.fullView .thumbnails,
+.fullView .header,
+.fullView .backLink {
+  display: none;
+}
+
+.fullView .stage,
+.fullView .stage img {
+  height: calc(100vh - 160px);
+  min-height: calc(100vh - 160px);
+}
+
+.status,
+.error,
+.toast {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+}
+
+.error {
+  color: #b71c1c;
+  background: rgba(183, 28, 28, 0.08);
+}
+
+.toast {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 1200;
+  background: #333;
+  color: #ffe082;
+  font-weight: 800;
+}
+
+@media (max-width: 820px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .viewer {
+    grid-template-columns: 1fr;
+  }
+
+  .thumbnails {
+    max-height: none;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .thumbnails button {
+    width: 92px;
+    flex: 0 0 auto;
+  }
+
+  .imageMeta {
+    flex-direction: column;
+  }
+}

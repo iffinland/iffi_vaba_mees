@@ -4,7 +4,8 @@ import collageImage from '../../assets/collage.jpg';
 
 function Layout({ children }) {
   const location = useLocation();
-  const isWidePage = location.pathname.startsWith('/videos');
+  const isWidePage =
+    location.pathname.startsWith('/videos') || location.pathname.startsWith('/gallery');
 
   return (
     <div className={`${styles.container} ${isWidePage ? styles.widePage : ''}`}>

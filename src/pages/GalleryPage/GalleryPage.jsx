@@ -1,57 +1,158 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaPlus } from 'react-icons/fa';
+import GalleryCard from '../../components/gallery/GalleryCard';
+import GalleryPublishModal from '../../components/gallery/GalleryPublishModal';
+import VideoCommentsModal from '../../components/videos/VideoCommentsModal';
+import VideoTipModal from '../../components/videos/VideoTipModal';
+import { useGalleries } from '../../hooks/useGalleries';
+import { useGalleryComments } from '../../hooks/useGalleryComments';
+import { useQortTip } from '../../hooks/useQortTip';
 import styles from './GalleryPage.module.css';
-import { albums } from '../../data/galleryData';
 
-import Lightbox from "yet-another-react-lightbox";
-import "yet-another-react-lightbox/styles.css";
-import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
-import "yet-another-react-lightbox/plugins/thumbnails.css";
-import Fullscreen from "yet-another-react-lightbox/plugins/fullscreen";
+const OWNER_QORTAL_NAME = 'iffi vaba mees';
 
 function GalleryPage() {
-  const [activeAlbumIndex, setActiveAlbumIndex] = useState(0);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const navigate = useNavigate();
+  const [isPublishOpen, setIsPublishOpen] = useState(false);
+  const [toast, setToast] = useState('');
+  const {
+    error,
+    galleries,
+    hasNextPage,
+    isLoading,
+    isPublishing,
+    page,
+    profile,
+    publishNewGallery,
+    setPage,
+    setSortOrder,
+    sortOrder,
+  } = useGalleries();
 
-  const activeAlbum = albums[activeAlbumIndex];
+  const notify = (message) => {
+    setToast(message);
+    window.setTimeout(() => setToast(''), 2600);
+  };
 
-  const openLightbox = (imageIndex) => {
-    setLightboxIndex(imageIndex);
-    setLightboxOpen(true);
+  const comments = useGalleryComments({ profile, notify });
+  const tip = useQortTip({ notify });
+  const canPublishGalleries = profile.name.trim().toLowerCase() === OWNER_QORTAL_NAME;
+
+  const openGalleryDetail = (gallery) => {
+    navigate(`/gallery/${encodeURIComponent(gallery.identifier)}`);
+  };
+
+  const handlePublish = async (form) => {
+    await publishNewGallery(form);
+    notify('Gallery published successfully.');
+  };
+
+  const handleShare = async (gallery) => {
+    const route = `${window.location.origin}${window.location.pathname}#/gallery/${encodeURIComponent(gallery.identifier)}`;
+    try {
+      await navigator.clipboard.writeText(route);
+      notify('Gallery link copied.');
+    } catch {
+      notify('Unable to copy link.');
+    }
   };
 
   return (
-    <div className={styles.galleryContainer}>
-      <h1 className={styles.title}>my life in pictures</h1>
-      <h4><i><center>I will be launching a full image gallery app soon. Here is a selection of just a few pictures from thousands that have been snapped over the past few years.</center></i></h4>
-      <div className={styles.albumSelector}>
-        {albums.map((album, index) => (
-          <button
-            key={album.name}
-            className={`${styles.albumButton} ${index === activeAlbumIndex ? styles.active : ''}`}
-            onClick={() => setActiveAlbumIndex(index)}
-          >
-            {album.name}
+    <section className={styles.page}>
+      {toast && <div className={styles.toast}>{toast}</div>}
+
+      <div className={styles.hero}>
+        <div>
+          <h1>Gallery</h1>
+          <p>
+            Browse image galleries published to QDN. Each gallery keeps its images,
+            thumbnails, comments, and share links outside the application bundle.
+          </p>
+        </div>
+        {canPublishGalleries && (
+          <button type="button" className={styles.publishButton} onClick={() => setIsPublishOpen(true)}>
+            <FaPlus />
+            <span>Publish gallery</span>
           </button>
-        ))}
+        )}
       </div>
 
-      <div className={styles.imageGrid}>
-        {activeAlbum.slides.map((slide, index) => (
-          <div key={slide.src} className={styles.imageWrapper} onClick={() => openLightbox(index)}>
-            <img src={slide.src} alt={slide.title} className={styles.thumbnail} />
-          </div>
-        ))}
+      <div className={styles.toolbar}>
+        <label className={styles.sortBox}>
+          Sort
+          <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </label>
       </div>
 
-      <Lightbox
-        open={lightboxOpen}
-        close={() => setLightboxOpen(false)}
-        slides={activeAlbum.slides}
-        index={lightboxIndex}
-        plugins={[Thumbnails, Fullscreen]}
+      {error && <p className={styles.error}>{error}</p>}
+
+      {isLoading ? (
+        <p className={styles.status}>Loading galleries...</p>
+      ) : galleries.length === 0 ? (
+        <p className={styles.status}>No galleries found.</p>
+      ) : (
+        <div className={styles.grid}>
+          {galleries.map((gallery) => (
+            <GalleryCard
+              gallery={gallery}
+              key={gallery.identifier}
+              onComment={comments.openComments}
+              onOpen={openGalleryDetail}
+              onShare={handleShare}
+              onTip={tip.openTip}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className={styles.pagination}>
+        <button type="button" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1 || isLoading}>
+          Previous
+        </button>
+        <span>Page {page}</span>
+        <button type="button" onClick={() => setPage(page + 1)} disabled={!hasNextPage || isLoading}>
+          Next
+        </button>
+      </div>
+
+      <GalleryPublishModal
+        isOpen={canPublishGalleries && isPublishOpen}
+        isPublishing={isPublishing}
+        onClose={() => setIsPublishOpen(false)}
+        onPublish={handlePublish}
       />
-    </div>
+
+      <VideoTipModal
+        amount={tip.amount}
+        balance={tip.balance}
+        error={tip.error}
+        isLoading={tip.isLoading}
+        isOpen={tip.isOpen}
+        isSending={tip.isSending}
+        onAmountChange={tip.setAmount}
+        onClose={tip.closeTip}
+        onSend={tip.sendTip}
+        recipientAddress={tip.recipientAddress}
+        video={tip.video}
+      />
+
+      <VideoCommentsModal
+        comments={comments.comments}
+        error={comments.error}
+        isLoading={comments.isLoading}
+        isOpen={Boolean(comments.activeEntity)}
+        isSaving={comments.isSaving}
+        onAddComment={comments.addComment}
+        onClose={comments.closeComments}
+        onEditComment={comments.editComment}
+        profile={profile}
+        video={comments.activeEntity}
+      />
+    </section>
   );
 }
 

@@ -1,0 +1,277 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams, useParams } from 'react-router-dom';
+import {
+  FaArrowLeft,
+  FaArrowRight,
+  FaCommentDots,
+  FaCompress,
+  FaEdit,
+  FaExpand,
+  FaPaperPlane,
+  FaShareAlt,
+} from 'react-icons/fa';
+import GalleryPublishModal from '../../components/gallery/GalleryPublishModal';
+import VideoCommentsModal from '../../components/videos/VideoCommentsModal';
+import VideoTipModal from '../../components/videos/VideoTipModal';
+import { useGalleryComments } from '../../hooks/useGalleryComments';
+import { useQortTip } from '../../hooks/useQortTip';
+import {
+  fetchGalleryByIdentifier,
+  getCurrentUserProfile,
+  updateGallery,
+} from '../../services/galleryService';
+import styles from './GalleryDetailPage.module.css';
+
+const OWNER_QORTAL_NAME = 'iffi vaba mees';
+
+function GalleryDetailPage() {
+  const { galleryId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [gallery, setGallery] = useState(null);
+  const [profile, setProfile] = useState({ address: '', name: '', names: [] });
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isFullView, setIsFullView] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [toast, setToast] = useState('');
+
+  const notify = (message) => {
+    setToast(message);
+    window.setTimeout(() => setToast(''), 2600);
+  };
+
+  const comments = useGalleryComments({ profile, notify });
+  const tip = useQortTip({ notify });
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        setProfile(await getCurrentUserProfile());
+      } catch (err) {
+        console.warn('Unable to load Qortal profile', err);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  useEffect(() => {
+    const loadGallery = async () => {
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const nextGallery = await fetchGalleryByIdentifier(decodeURIComponent(galleryId || ''));
+        setGallery(nextGallery);
+      } catch (err) {
+        setError(err?.message || 'Unable to load gallery.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadGallery();
+  }, [galleryId]);
+
+  useEffect(() => {
+    if (!gallery?.images.length) return;
+    const imageId = searchParams.get('image');
+    const imageIndex = gallery.images.findIndex((image) => image.id === imageId);
+    setActiveIndex(imageIndex >= 0 ? imageIndex : 0);
+  }, [gallery, searchParams]);
+
+  const canEditGallery = profile.name.trim().toLowerCase() === OWNER_QORTAL_NAME;
+  const activeImage = gallery?.images[activeIndex] || null;
+  const activeEntity = useMemo(() => {
+    if (!gallery || !activeImage) return null;
+    return {
+      identifier: `${gallery.identifier}_${activeImage.id}`,
+      title: activeImage.description || gallery.title || 'Gallery image',
+      authorName: gallery.authorName,
+      authorAddress: gallery.authorAddress,
+    };
+  }, [activeImage, gallery]);
+
+  const setImageIndex = (nextIndex) => {
+    if (!gallery?.images.length) return;
+    const normalizedIndex = (nextIndex + gallery.images.length) % gallery.images.length;
+    setActiveIndex(normalizedIndex);
+    setSearchParams({ image: gallery.images[normalizedIndex].id });
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (!gallery?.images.length) return;
+      if (event.key === 'ArrowLeft') setImageIndex(activeIndex - 1);
+      if (event.key === 'ArrowRight') setImageIndex(activeIndex + 1);
+      if (event.key === 'Escape') setIsFullView(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
+
+  const handleShare = async () => {
+    const route = `${window.location.origin}${window.location.pathname}#/gallery/${encodeURIComponent(gallery.identifier)}?image=${encodeURIComponent(activeImage?.id || '')}`;
+    try {
+      await navigator.clipboard.writeText(route);
+      notify('Image link copied.');
+    } catch {
+      notify('Unable to copy link.');
+    }
+  };
+
+  const saveGalleryEdits = async (form) => {
+    if (!gallery || !canEditGallery) {
+      throw new Error('Only the site owner can edit this gallery.');
+    }
+
+    setIsSaving(true);
+    setError('');
+
+    try {
+      const updated = await updateGallery({
+        gallery,
+        form,
+        authorName: profile.name,
+      });
+      setGallery(updated);
+      setActiveIndex(0);
+      setIsEditOpen(false);
+      notify('Gallery updated.');
+      return updated;
+    } catch (err) {
+      setError(err?.message || 'Unable to update gallery.');
+      throw err;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return <p className={styles.status}>Loading gallery...</p>;
+  }
+
+  if (!gallery) {
+    return (
+      <section className={styles.page}>
+        <Link to="/gallery" className={styles.backLink}>Back to galleries</Link>
+        <p className={styles.status}>{error || 'Gallery not found.'}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className={`${styles.page} ${isFullView ? styles.fullView : ''}`}>
+      {toast && <div className={styles.toast}>{toast}</div>}
+      <Link to="/gallery" className={styles.backLink}>Back to galleries</Link>
+
+      <header className={styles.header}>
+        <div>
+          <h1>{gallery.title || 'Untitled gallery'}</h1>
+          <div
+            className={styles.description}
+            dangerouslySetInnerHTML={{ __html: gallery.descriptionHtml || 'No description added yet.' }}
+          />
+        </div>
+        {canEditGallery && (
+          <button type="button" className={styles.editButton} onClick={() => setIsEditOpen(true)}>
+            <FaEdit />
+            <span>Edit gallery</span>
+          </button>
+        )}
+      </header>
+
+      {error && <p className={styles.error}>{error}</p>}
+
+      {activeImage ? (
+        <div className={styles.viewer}>
+          <div className={styles.stage}>
+            <button type="button" className={styles.navButton} onClick={() => setImageIndex(activeIndex - 1)}>
+              <FaArrowLeft />
+            </button>
+            <img src={activeImage.src} alt={activeImage.description || gallery.title} />
+            <button type="button" className={styles.navButton} onClick={() => setImageIndex(activeIndex + 1)}>
+              <FaArrowRight />
+            </button>
+          </div>
+
+          <aside className={styles.thumbnails}>
+            {gallery.images.map((image, index) => (
+              <button
+                type="button"
+                key={image.id}
+                className={index === activeIndex ? styles.activeThumbnail : ''}
+                onClick={() => setImageIndex(index)}
+                aria-label={`Open image ${index + 1}`}
+              >
+                <img src={image.thumbnailUrl || image.src} alt="" />
+              </button>
+            ))}
+          </aside>
+        </div>
+      ) : (
+        <p className={styles.status}>No images in this gallery yet.</p>
+      )}
+
+      {activeImage && (
+        <div className={styles.imageMeta}>
+          <p>{activeImage.description || 'No image description added yet.'}</p>
+          <div className={styles.imageActions}>
+            <button type="button" onClick={() => setIsFullView((current) => !current)}>
+              {isFullView ? <FaCompress /> : <FaExpand />}
+            </button>
+            <button type="button" onClick={handleShare}>
+              <FaShareAlt />
+            </button>
+            <button type="button" onClick={() => tip.openTip(gallery)}>
+              <FaPaperPlane />
+            </button>
+            <button type="button" onClick={() => activeEntity && comments.openComments(activeEntity)}>
+              <FaCommentDots />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <GalleryPublishModal
+        editGallery={gallery}
+        isOpen={canEditGallery && isEditOpen}
+        isPublishing={isSaving}
+        onClose={() => setIsEditOpen(false)}
+        onPublish={saveGalleryEdits}
+      />
+
+      <VideoTipModal
+        amount={tip.amount}
+        balance={tip.balance}
+        error={tip.error}
+        isLoading={tip.isLoading}
+        isOpen={tip.isOpen}
+        isSending={tip.isSending}
+        onAmountChange={tip.setAmount}
+        onClose={tip.closeTip}
+        onSend={tip.sendTip}
+        recipientAddress={tip.recipientAddress}
+        video={tip.video}
+      />
+
+      <VideoCommentsModal
+        comments={comments.comments}
+        error={comments.error}
+        isLoading={comments.isLoading}
+        isOpen={Boolean(comments.activeEntity)}
+        isSaving={comments.isSaving}
+        onAddComment={comments.addComment}
+        onClose={comments.closeComments}
+        onEditComment={comments.editComment}
+        profile={profile}
+        video={comments.activeEntity}
+      />
+    </section>
+  );
+}
+
+export default GalleryDetailPage;

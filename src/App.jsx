@@ -8,6 +8,7 @@ import PostPage from './pages/PostPage/PostPage';
 import ProjectsPage from './pages/ProjectsPage/ProjectsPage';
 import ContactPage from './pages/ContactPage/ContactPage';
 import GalleryPage from './pages/GalleryPage/GalleryPage';
+import GalleryDetailPage from './pages/GalleryDetailPage/GalleryDetailPage';
 import GuestbookPage from './pages/GuestbookPage/GuestbookPage'; // Veendu, et see rida on olemas
 import VideoDetailPage from './pages/VideoDetailPage/VideoDetailPage';
 import VideosPage from './pages/VideosPage/VideosPage';
@@ -22,6 +23,7 @@ function App() {
           <Route path="/post/:postId" element={<PostPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/gallery" element={<GalleryPage />} />
+          <Route path="/gallery/:galleryId" element={<GalleryDetailPage />} />
           <Route path="/videos" element={<VideosPage />} />
           <Route path="/videos/:videoId" element={<VideoDetailPage />} />
           <Route path="/contact" element={<ContactPage />} />
