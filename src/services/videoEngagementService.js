@@ -10,6 +10,16 @@ const LIKE_PREFIX = 'ivm_vl_';
 const PAGE_SIZE = 100;
 
 const toEntityKey = (videoId) => sanitizeIdentifierSegment(videoId).slice(0, 24);
+const toLikeEntityKey = (videoId) => {
+  const value = String(videoId || '');
+  let hash = 5381;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 33) ^ value.charCodeAt(index);
+  }
+
+  return Math.abs(hash >>> 0).toString(36);
+};
 const toAuthorKey = (value) => sanitizeIdentifierSegment(value).slice(0, 16);
 
 export const fetchVideoComments = async (videoId, limit = 50) => {
@@ -148,7 +158,7 @@ export const fetchVideoLikeCount = async (videoId) => {
     action: 'SEARCH_QDN_RESOURCES',
     service: 'DOCUMENT',
     mode: 'ALL',
-    identifier: `${LIKE_PREFIX}${toEntityKey(videoId)}_`,
+    identifier: `${LIKE_PREFIX}${toLikeEntityKey(videoId)}_`,
     prefix: true,
     limit: PAGE_SIZE,
     offset: 0,
@@ -161,7 +171,7 @@ export const fetchVideoLikeCount = async (videoId) => {
 };
 
 export const publishVideoLike = async ({ videoId, videoTitle, authorName, authorAddress }) => {
-  const identifier = `${LIKE_PREFIX}${toEntityKey(videoId)}_${toAuthorKey(authorName || authorAddress)}`;
+  const identifier = `${LIKE_PREFIX}${toLikeEntityKey(videoId)}_${toAuthorKey(authorName || authorAddress)}`;
   const payload = {
     id: identifier,
     identifier,

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { FaEdit, FaReply } from 'react-icons/fa';
-import RichTextEditor from '../common/RichTextEditor';
-import styles from './GalleryInlineComments.module.css';
+import RichTextEditor from './RichTextEditor';
+import styles from './InlineComments.module.css';
 
 const stripHtml = (html = '') =>
   html
@@ -20,7 +20,7 @@ const formatDate = (value) => {
   });
 };
 
-function GalleryInlineComments({
+function InlineComments({
   canLoadMore,
   comments,
   error,
@@ -227,4 +227,4 @@ function GalleryInlineComments({
   );
 }
 
-export default GalleryInlineComments;
+export default InlineComments;

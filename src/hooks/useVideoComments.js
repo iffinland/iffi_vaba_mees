@@ -14,21 +14,26 @@ const toPlainText = (html = '') =>
 export const useVideoComments = ({ profile, notify }) => {
   const [activeVideo, setActiveVideo] = useState(null);
   const [comments, setComments] = useState([]);
+  const [commentLimit, setCommentLimit] = useState(5);
+  const [canLoadMoreComments, setCanLoadMoreComments] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const openComments = useCallback(async (video) => {
+  const openComments = useCallback(async (video, limit = 5) => {
     setActiveVideo(video);
+    setCommentLimit(limit);
     setIsLoading(true);
     setError('');
 
     try {
-      const result = await fetchVideoComments(video.identifier);
-      setComments(result);
+      const result = await fetchVideoComments(video.identifier, limit + 1);
+      setCanLoadMoreComments(result.length > limit);
+      setComments(result.slice(0, limit));
     } catch (err) {
       setError(err?.message || 'Unable to load comments.');
       setComments([]);
+      setCanLoadMoreComments(false);
     } finally {
       setIsLoading(false);
     }
@@ -37,8 +42,28 @@ export const useVideoComments = ({ profile, notify }) => {
   const closeComments = useCallback(() => {
     setActiveVideo(null);
     setComments([]);
+    setCanLoadMoreComments(false);
+    setCommentLimit(5);
     setError('');
   }, []);
+
+  const loadMoreComments = useCallback(async () => {
+    if (!activeVideo || isLoading) return;
+    const nextLimit = commentLimit + 5;
+    setCommentLimit(nextLimit);
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const result = await fetchVideoComments(activeVideo.identifier, nextLimit + 1);
+      setCanLoadMoreComments(result.length > nextLimit);
+      setComments(result.slice(0, nextLimit));
+    } catch (err) {
+      setError(err?.message || 'Unable to load comments.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeVideo, commentLimit, isLoading]);
 
   const addComment = useCallback(
     async ({ messageHtml, parentId = '' }) => {
@@ -61,7 +86,7 @@ export const useVideoComments = ({ profile, notify }) => {
           messageHtml,
           messageText: toPlainText(messageHtml),
         });
-        setComments((current) => [...current, savedComment]);
+        setComments((current) => [...current, savedComment].slice(0, commentLimit));
         notify?.('Comment published.');
         return true;
       } catch (err) {
@@ -71,7 +96,7 @@ export const useVideoComments = ({ profile, notify }) => {
         setIsSaving(false);
       }
     },
-    [activeVideo, notify, profile.address, profile.name],
+    [activeVideo, commentLimit, notify, profile.address, profile.name],
   );
 
   const editComment = useCallback(
@@ -121,12 +146,14 @@ export const useVideoComments = ({ profile, notify }) => {
   return {
     activeVideo,
     addComment,
+    canLoadMoreComments,
     closeComments,
     comments,
     editComment,
     error,
     isLoading,
     isSaving,
+    loadMoreComments,
     openComments,
   };
 };

@@ -10,7 +10,7 @@ import {
   FaPaperPlane,
   FaShareAlt,
 } from 'react-icons/fa';
-import GalleryInlineComments from '../../components/gallery/GalleryInlineComments';
+import InlineComments from '../../components/common/InlineComments';
 import GalleryPublishModal from '../../components/gallery/GalleryPublishModal';
 import VideoTipModal from '../../components/videos/VideoTipModal';
 import { useGalleryComments } from '../../hooks/useGalleryComments';
@@ -307,7 +307,7 @@ function GalleryDetailPage() {
 
       {activeImage && (
         <div ref={commentsRef}>
-          <GalleryInlineComments
+          <InlineComments
             canLoadMore={comments.canLoadMoreComments}
             comments={comments.comments}
             error={comments.error}
