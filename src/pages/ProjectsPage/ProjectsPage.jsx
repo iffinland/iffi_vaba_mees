@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import styles from './ProjectsPage.module.css';
-import projectsImage from '../../assets/poster-my-projects.png';
+import projectsImage from '../../assets/poster-my-projects.webp';
 
 function ProjectsPage() {
   const [activeTab, setActiveTab] = useState('own'); // 'own' on vaikimisi aktiivne

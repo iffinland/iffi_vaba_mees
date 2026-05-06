@@ -1,7 +1,7 @@
 // Impordime pildid, et Vite teaks neid töödelda
-import whoIAmImage from '../assets/poster-who-i-am.png';
-import myWorldImage from '../assets/poster-my-world.png';
-import storybookImage from '../assets/poster-storybook.png';
+import whoIAmImage from '../assets/poster-who-i-am.webp';
+import myWorldImage from '../assets/poster-my-world.webp';
+import storybookImage from '../assets/poster-storybook.webp';
 
 export const posts = {
   'who-i-am': {
