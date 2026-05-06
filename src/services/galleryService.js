@@ -10,6 +10,7 @@ import { getCurrentUserProfile } from './videoService';
 export { getCurrentUserProfile };
 
 export const GALLERY_METADATA_PREFIX = 'iffivabamees_gallery_';
+const GALLERY_IMAGE_PREFIX = 'ivm_gi_';
 const GALLERY_SERVICE = 'DOCUMENT';
 const IMAGE_SERVICE = 'IMAGE';
 const THUMBNAIL_SERVICE = 'THUMBNAIL';
@@ -91,9 +92,13 @@ const buildGalleryIdentifier = ({ title, authorName }) => {
     sanitizeIdentifierSegment(title) ||
     sanitizeIdentifierSegment(authorName) ||
     'gallery';
+  const timestamp = Date.now().toString(36);
 
-  return `${GALLERY_METADATA_PREFIX}${base}_${Date.now()}_${createShortId()}`;
+  return `${GALLERY_METADATA_PREFIX}${base.slice(0, 18)}_${timestamp}_${createShortId()}`;
 };
+
+const buildImageIdentifier = (index) =>
+  `${GALLERY_IMAGE_PREFIX}${Date.now().toString(36)}_${index}_${createShortId()}`;
 
 const resolveResourceUrl = async (resource) => {
   if (!resource?.service || !resource?.name || !resource?.identifier) return '';
@@ -179,12 +184,12 @@ const publishThumbnail = async ({ file, identifier, authorName, title }) => {
   };
 };
 
-const publishImage = async ({ file, galleryIdentifier, index, authorName, title }) => {
+const publishImage = async ({ file, index, authorName, title }) => {
   if (!file?.type?.startsWith('image/')) {
     throw new Error('Gallery images must be image files.');
   }
 
-  const imageId = `${galleryIdentifier}_img_${createShortId()}_${index}`;
+  const imageId = buildImageIdentifier(index);
   const response = await requestQortal({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
@@ -223,12 +228,22 @@ const publishImage = async ({ file, galleryIdentifier, index, authorName, title 
 };
 
 const publishGalleryMetadata = async ({ gallery, authorName }) => {
+  const metadata = {
+    ...gallery,
+    coverUrl: '',
+    images: gallery.images.map((image) => ({
+      ...image,
+      src: '',
+      thumbnailUrl: '',
+    })),
+  };
+
   await requestQortal({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: GALLERY_SERVICE,
     identifier: gallery.identifier,
-    data64: encodeObjectToBase64(gallery),
+    data64: encodeObjectToBase64(metadata),
     encoding: 'base64',
     title: gallery.title || 'Untitled gallery',
     description: gallery.descriptionText.slice(0, 4000),
@@ -334,7 +349,6 @@ export const publishGallery = async ({ form, authorName, authorAddress }) => {
     const row = imageRows[index];
     const image = await publishImage({
       file: row.file,
-      galleryIdentifier: identifier,
       index,
       authorName,
       title: form.title,
@@ -348,7 +362,7 @@ export const publishGallery = async ({ form, authorName, authorAddress }) => {
 
   let coverResource = await publishThumbnail({
     file: form.coverFile,
-    identifier: `${identifier}_cover`,
+    identifier: `${identifier}_c`,
     authorName,
     title: form.title,
   });
@@ -382,7 +396,7 @@ export const updateGallery = async ({ gallery, form, authorName }) => {
   if (form.coverFile) {
     coverResource = await publishThumbnail({
       file: form.coverFile,
-      identifier: `${gallery.identifier}_cover`,
+      identifier: `${gallery.identifier}_c`,
       authorName,
       title: form.title || gallery.title,
     });
@@ -400,7 +414,6 @@ export const updateGallery = async ({ gallery, form, authorName }) => {
     const row = form.images[index];
     const image = await publishImage({
       file: row.file,
-      galleryIdentifier: gallery.identifier,
       index: existingImages.length + index,
       authorName,
       title: form.title || gallery.title,
