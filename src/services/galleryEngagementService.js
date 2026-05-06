@@ -13,6 +13,16 @@ const LIKE_PREFIX = 'ivm_gl_';
 const PAGE_SIZE = 100;
 
 const toEntityKey = (entityId) => sanitizeIdentifierSegment(entityId).slice(0, 24);
+const toLikeEntityKey = (entityId) => {
+  const value = String(entityId || '');
+  let hash = 5381;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 33) ^ value.charCodeAt(index);
+  }
+
+  return Math.abs(hash >>> 0).toString(36);
+};
 const toAuthorKey = (value) => sanitizeIdentifierSegment(value).slice(0, 16);
 
 export const fetchGalleryComments = async (entityId, limit = 50) => {
@@ -151,7 +161,7 @@ export const fetchGalleryLikeCount = async (entityId) => {
     action: 'SEARCH_QDN_RESOURCES',
     service: 'DOCUMENT',
     mode: 'ALL',
-    identifier: `${LIKE_PREFIX}${toEntityKey(entityId)}_`,
+    identifier: `${LIKE_PREFIX}${toLikeEntityKey(entityId)}_`,
     prefix: true,
     limit: PAGE_SIZE,
     offset: 0,
@@ -169,7 +179,7 @@ export const publishGalleryLike = async ({
   authorName,
   authorAddress,
 }) => {
-  const identifier = `${LIKE_PREFIX}${toEntityKey(entityId)}_${toAuthorKey(authorName || authorAddress)}`;
+  const identifier = `${LIKE_PREFIX}${toLikeEntityKey(entityId)}_${toAuthorKey(authorName || authorAddress)}`;
   const payload = {
     id: identifier,
     identifier,
