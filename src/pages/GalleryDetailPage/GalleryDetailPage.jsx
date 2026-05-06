@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams, useParams } from 'react-router-dom';
 import {
   FaArrowLeft,
   FaArrowRight,
   FaCommentDots,
-  FaCompress,
   FaEdit,
   FaExpand,
+  FaHeart,
   FaPaperPlane,
   FaShareAlt,
 } from 'react-icons/fa';
+import GalleryInlineComments from '../../components/gallery/GalleryInlineComments';
 import GalleryPublishModal from '../../components/gallery/GalleryPublishModal';
-import VideoCommentsModal from '../../components/videos/VideoCommentsModal';
 import VideoTipModal from '../../components/videos/VideoTipModal';
 import { useGalleryComments } from '../../hooks/useGalleryComments';
 import { useQortTip } from '../../hooks/useQortTip';
@@ -20,6 +20,10 @@ import {
   getCurrentUserProfile,
   updateGallery,
 } from '../../services/galleryService';
+import {
+  fetchGalleryLikeCount,
+  publishGalleryLike,
+} from '../../services/galleryEngagementService';
 import styles from './GalleryDetailPage.module.css';
 
 const OWNER_QORTAL_NAME = 'iffi vaba mees';
@@ -33,9 +37,12 @@ function GalleryDetailPage() {
   const [isFullView, setIsFullView] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [imageLikeCount, setImageLikeCount] = useState(0);
+  const [isLikingImage, setIsLikingImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
+  const commentsRef = useRef(null);
 
   const notify = (message) => {
     setToast(message);
@@ -94,6 +101,36 @@ function GalleryDetailPage() {
     };
   }, [activeImage, gallery]);
 
+  useEffect(() => {
+    if (activeEntity) {
+      comments.openComments(activeEntity, 5);
+    }
+  }, [activeEntity]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadImageLikes = async () => {
+      if (!activeEntity) {
+        setImageLikeCount(0);
+        return;
+      }
+
+      try {
+        const count = await fetchGalleryLikeCount(activeEntity.identifier);
+        if (!cancelled) setImageLikeCount(count);
+      } catch {
+        if (!cancelled) setImageLikeCount(0);
+      }
+    };
+
+    loadImageLikes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeEntity]);
+
   const setImageIndex = (nextIndex) => {
     if (!gallery?.images.length) return;
     const normalizedIndex = (nextIndex + gallery.images.length) % gallery.images.length;
@@ -120,6 +157,34 @@ function GalleryDetailPage() {
       notify('Image link copied.');
     } catch {
       notify('Unable to copy link.');
+    }
+  };
+
+  const scrollToComments = () => {
+    commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleLikeImage = async () => {
+    if (!activeEntity) return;
+    if (!profile.name || !profile.address) {
+      notify('A Qortal account with a registered name is required.');
+      return;
+    }
+
+    setIsLikingImage(true);
+    try {
+      await publishGalleryLike({
+        entityId: activeEntity.identifier,
+        entityTitle: activeEntity.title,
+        authorName: profile.name,
+        authorAddress: profile.address,
+      });
+      setImageLikeCount((current) => current + 1);
+      notify('Image liked.');
+    } catch (err) {
+      notify(err?.message || 'Unable to like image.');
+    } finally {
+      setIsLikingImage(false);
     }
   };
 
@@ -164,7 +229,7 @@ function GalleryDetailPage() {
   }
 
   return (
-    <section className={`${styles.page} ${isFullView ? styles.fullView : ''}`}>
+    <section className={styles.page}>
       {toast && <div className={styles.toast}>{toast}</div>}
       <Link to="/gallery" className={styles.backLink}>Back to galleries</Link>
 
@@ -220,8 +285,12 @@ function GalleryDetailPage() {
         <div className={styles.imageMeta}>
           <p>{activeImage.description || 'No image description added yet.'}</p>
           <div className={styles.imageActions}>
+            <button type="button" onClick={handleLikeImage} disabled={isLikingImage}>
+              <FaHeart />
+              <span>{imageLikeCount}</span>
+            </button>
             <button type="button" onClick={() => setIsFullView((current) => !current)}>
-              {isFullView ? <FaCompress /> : <FaExpand />}
+              <FaExpand />
             </button>
             <button type="button" onClick={handleShare}>
               <FaShareAlt />
@@ -229,10 +298,41 @@ function GalleryDetailPage() {
             <button type="button" onClick={() => tip.openTip(gallery)}>
               <FaPaperPlane />
             </button>
-            <button type="button" onClick={() => activeEntity && comments.openComments(activeEntity)}>
+            <button type="button" onClick={scrollToComments}>
               <FaCommentDots />
             </button>
           </div>
+        </div>
+      )}
+
+      {activeImage && (
+        <div ref={commentsRef}>
+          <GalleryInlineComments
+            canLoadMore={comments.canLoadMoreComments}
+            comments={comments.comments}
+            error={comments.error}
+            isLoading={comments.isLoading}
+            isSaving={comments.isSaving}
+            onAddComment={comments.addComment}
+            onEditComment={comments.editComment}
+            onLoadMore={comments.loadMoreComments}
+            profile={profile}
+          />
+        </div>
+      )}
+
+      {isFullView && activeImage && (
+        <div className={styles.fullscreenOverlay} role="dialog" aria-modal="true">
+          <button type="button" className={styles.fullscreenClose} onClick={() => setIsFullView(false)}>
+            Close
+          </button>
+          <button type="button" className={styles.fullscreenNavLeft} onClick={() => setImageIndex(activeIndex - 1)}>
+            <FaArrowLeft />
+          </button>
+          <img src={activeImage.src} alt={activeImage.description || gallery.title} />
+          <button type="button" className={styles.fullscreenNavRight} onClick={() => setImageIndex(activeIndex + 1)}>
+            <FaArrowRight />
+          </button>
         </div>
       )}
 
@@ -258,18 +358,6 @@ function GalleryDetailPage() {
         video={tip.video}
       />
 
-      <VideoCommentsModal
-        comments={comments.comments}
-        error={comments.error}
-        isLoading={comments.isLoading}
-        isOpen={Boolean(comments.activeEntity)}
-        isSaving={comments.isSaving}
-        onAddComment={comments.addComment}
-        onClose={comments.closeComments}
-        onEditComment={comments.editComment}
-        profile={profile}
-        video={comments.activeEntity}
-      />
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { FaCommentDots, FaImages, FaPaperPlane, FaShareAlt } from 'react-icons/fa';
+import { FaCommentDots, FaHeart, FaImages, FaPaperPlane, FaShareAlt } from 'react-icons/fa';
 import styles from './GalleryCard.module.css';
 
 const truncate = (value = '', max = 180) => {
@@ -6,7 +6,7 @@ const truncate = (value = '', max = 180) => {
   return `${value.slice(0, max).trim()}...`;
 };
 
-function GalleryCard({ gallery, onComment, onOpen, onShare, onTip }) {
+function GalleryCard({ gallery, likeCount, onComment, onLike, onOpen, onShare, onTip }) {
   const stopCardClick = (event) => {
     event.stopPropagation();
   };
@@ -43,6 +43,18 @@ function GalleryCard({ gallery, onComment, onOpen, onShare, onTip }) {
       </div>
 
       <div className={styles.actions}>
+        <button
+          type="button"
+          onClick={(event) => {
+            stopCardClick(event);
+            onLike(gallery);
+          }}
+          aria-label="Like gallery"
+          title="Like"
+        >
+          <FaHeart />
+          <span>{likeCount || 0}</span>
+        </button>
         <button
           type="button"
           onClick={(event) => {

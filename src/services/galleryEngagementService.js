@@ -9,9 +9,11 @@ import { getQortBalance, resolveNameAddress, sendQortTip } from './videoEngageme
 export { getQortBalance, resolveNameAddress, sendQortTip };
 
 const COMMENT_PREFIX = 'ivm_gc_';
+const LIKE_PREFIX = 'ivm_gl_';
 const PAGE_SIZE = 100;
 
 const toEntityKey = (entityId) => sanitizeIdentifierSegment(entityId).slice(0, 24);
+const toAuthorKey = (value) => sanitizeIdentifierSegment(value).slice(0, 16);
 
 export const fetchGalleryComments = async (entityId, limit = 50) => {
   const comments = [];
@@ -139,6 +141,53 @@ export const updateGalleryComment = async ({
     encoding: 'base64',
     title: `Comment on ${entityTitle || 'gallery image'}`.slice(0, 55),
     description: messageText.slice(0, 4000),
+  });
+
+  return payload;
+};
+
+export const fetchGalleryLikeCount = async (entityId) => {
+  const page = await requestQortal({
+    action: 'SEARCH_QDN_RESOURCES',
+    service: 'DOCUMENT',
+    mode: 'ALL',
+    identifier: `${LIKE_PREFIX}${toEntityKey(entityId)}_`,
+    prefix: true,
+    limit: PAGE_SIZE,
+    offset: 0,
+    reverse: true,
+    includeMetadata: false,
+    excludeBlocked: true,
+  });
+
+  return Array.isArray(page) ? page.length : 0;
+};
+
+export const publishGalleryLike = async ({
+  entityId,
+  entityTitle,
+  authorName,
+  authorAddress,
+}) => {
+  const identifier = `${LIKE_PREFIX}${toEntityKey(entityId)}_${toAuthorKey(authorName || authorAddress)}`;
+  const payload = {
+    id: identifier,
+    identifier,
+    entityId,
+    authorName,
+    authorAddress,
+    created: Date.now(),
+  };
+
+  await requestQortal({
+    action: 'PUBLISH_QDN_RESOURCE',
+    name: authorName,
+    service: 'DOCUMENT',
+    identifier,
+    data64: encodeObjectToBase64(payload),
+    encoding: 'base64',
+    title: `Like on ${entityTitle || 'gallery image'}`.slice(0, 55),
+    description: 'Gallery like',
   });
 
   return payload;

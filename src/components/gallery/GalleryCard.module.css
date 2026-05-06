@@ -70,7 +70,7 @@
 
 .actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   background: #f7f7f7;
   border-top: 1px solid #ececec;
 }
@@ -84,6 +84,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.35rem;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.15s ease;
 }

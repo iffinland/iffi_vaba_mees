@@ -4,6 +4,10 @@ import {
   getCurrentUserProfile,
   publishGallery,
 } from '../services/galleryService';
+import {
+  fetchGalleryLikeCount,
+  publishGalleryLike,
+} from '../services/galleryEngagementService';
 
 const PAGE_SIZE = 12;
 
@@ -16,6 +20,7 @@ export const useGalleries = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [error, setError] = useState('');
   const [hasNextPage, setHasNextPage] = useState(false);
+  const [likeCounts, setLikeCounts] = useState({});
 
   const loadGalleries = useCallback(async () => {
     setIsLoading(true);
@@ -25,6 +30,17 @@ export const useGalleries = () => {
       const result = await fetchGalleryPage({ page, pageSize: PAGE_SIZE, sortOrder });
       setGalleries(result.galleries);
       setHasNextPage(result.hasNextPage);
+
+      const counts = await Promise.all(
+        result.galleries.map(async (gallery) => {
+          try {
+            return [gallery.identifier, await fetchGalleryLikeCount(gallery.identifier)];
+          } catch {
+            return [gallery.identifier, 0];
+          }
+        }),
+      );
+      setLikeCounts(Object.fromEntries(counts));
     } catch (err) {
       setError(err?.message || 'Unable to load galleries.');
       setGalleries([]);
@@ -76,12 +92,35 @@ export const useGalleries = () => {
     [profile.address, profile.name],
   );
 
+  const likeGallery = useCallback(
+    async (gallery) => {
+      if (!profile.name || !profile.address) {
+        throw new Error('A Qortal account with a registered name is required.');
+      }
+
+      await publishGalleryLike({
+        entityId: gallery.identifier,
+        entityTitle: gallery.title,
+        authorName: profile.name,
+        authorAddress: profile.address,
+      });
+
+      setLikeCounts((current) => ({
+        ...current,
+        [gallery.identifier]: (current[gallery.identifier] || 0) + 1,
+      }));
+    },
+    [profile.address, profile.name],
+  );
+
   return {
     error,
     galleries,
     hasNextPage,
     isLoading,
     isPublishing,
+    likeCounts,
+    likeGallery,
     loadGalleries,
     page,
     profile,

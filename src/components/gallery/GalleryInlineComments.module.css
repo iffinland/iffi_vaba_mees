@@ -1,0 +1,131 @@
+.commentsSection {
+  margin-top: 1rem;
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.2rem;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
+}
+
+.commentsSection h2 {
+  margin: 0 0 1rem;
+}
+
+.editorBlock,
+.replyEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.editorBlock > button,
+.replyEditor > button,
+.commentActions button,
+.inlineActions button,
+.loadMoreButton {
+  border: none;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  background: #ffe082;
+  color: #333;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.editorBlock > button,
+.replyEditor > button {
+  align-self: flex-end;
+}
+
+.commentList {
+  margin-top: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.comment,
+.reply {
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fafafa;
+}
+
+.commentHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #666;
+}
+
+.commentHeader strong {
+  color: #333;
+}
+
+.timestamps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  font-size: 0.9rem;
+}
+
+.editedTimestamp {
+  font-size: 0.82rem;
+  color: #777;
+}
+
+.commentBody {
+  line-height: 1.6;
+}
+
+.commentActions,
+.inlineActions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.7rem;
+}
+
+.commentActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #efefef;
+}
+
+.inlineActions button:last-child {
+  background: #efefef;
+}
+
+.replies {
+  margin-top: 1rem;
+  padding-left: 1rem;
+  border-left: 2px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.reply {
+  background: #fff;
+}
+
+.status,
+.error {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+}
+
+.error {
+  color: #b71c1c;
+  background: rgba(183, 28, 28, 0.08);
+}
+
+.loadMoreButton {
+  margin-top: 1rem;
+  background: #333;
+  color: #fff;
+}

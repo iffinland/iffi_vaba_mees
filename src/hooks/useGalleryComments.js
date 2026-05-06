@@ -14,20 +14,26 @@ const toPlainText = (html = '') =>
 export const useGalleryComments = ({ profile, notify }) => {
   const [activeEntity, setActiveEntity] = useState(null);
   const [comments, setComments] = useState([]);
+  const [commentLimit, setCommentLimit] = useState(5);
+  const [canLoadMoreComments, setCanLoadMoreComments] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const openComments = useCallback(async (entity) => {
+  const openComments = useCallback(async (entity, limit = 5) => {
     setActiveEntity(entity);
+    setCommentLimit(limit);
     setIsLoading(true);
     setError('');
 
     try {
-      setComments(await fetchGalleryComments(entity.identifier));
+      const result = await fetchGalleryComments(entity.identifier, limit + 1);
+      setCanLoadMoreComments(result.length > limit);
+      setComments(result.slice(0, limit));
     } catch (err) {
       setError(err?.message || 'Unable to load comments.');
       setComments([]);
+      setCanLoadMoreComments(false);
     } finally {
       setIsLoading(false);
     }
@@ -36,8 +42,28 @@ export const useGalleryComments = ({ profile, notify }) => {
   const closeComments = useCallback(() => {
     setActiveEntity(null);
     setComments([]);
+    setCanLoadMoreComments(false);
+    setCommentLimit(5);
     setError('');
   }, []);
+
+  const loadMoreComments = useCallback(async () => {
+    if (!activeEntity || isLoading) return;
+    const nextLimit = commentLimit + 5;
+    setCommentLimit(nextLimit);
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const result = await fetchGalleryComments(activeEntity.identifier, nextLimit + 1);
+      setCanLoadMoreComments(result.length > nextLimit);
+      setComments(result.slice(0, nextLimit));
+    } catch (err) {
+      setError(err?.message || 'Unable to load comments.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeEntity, commentLimit, isLoading]);
 
   const addComment = useCallback(
     async ({ messageHtml, parentId = '' }) => {
@@ -60,7 +86,7 @@ export const useGalleryComments = ({ profile, notify }) => {
           messageHtml,
           messageText: toPlainText(messageHtml),
         });
-        setComments((current) => [...current, savedComment]);
+        setComments((current) => [...current, savedComment].slice(0, commentLimit));
         notify?.('Comment published.');
         return true;
       } catch (err) {
@@ -70,7 +96,7 @@ export const useGalleryComments = ({ profile, notify }) => {
         setIsSaving(false);
       }
     },
-    [activeEntity, notify, profile.address, profile.name],
+    [activeEntity, commentLimit, notify, profile.address, profile.name],
   );
 
   const editComment = useCallback(
@@ -120,12 +146,14 @@ export const useGalleryComments = ({ profile, notify }) => {
   return {
     activeEntity,
     addComment,
+    canLoadMoreComments,
     closeComments,
     comments,
     editComment,
     error,
     isLoading,
     isSaving,
+    loadMoreComments,
     openComments,
   };
 };

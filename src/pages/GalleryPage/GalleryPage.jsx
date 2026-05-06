@@ -22,6 +22,8 @@ function GalleryPage() {
     hasNextPage,
     isLoading,
     isPublishing,
+    likeCounts,
+    likeGallery,
     page,
     profile,
     publishNewGallery,
@@ -55,6 +57,15 @@ function GalleryPage() {
       notify('Gallery link copied.');
     } catch {
       notify('Unable to copy link.');
+    }
+  };
+
+  const handleLike = async (gallery) => {
+    try {
+      await likeGallery(gallery);
+      notify('Gallery liked.');
+    } catch (err) {
+      notify(err?.message || 'Unable to like gallery.');
     }
   };
 
@@ -100,7 +111,9 @@ function GalleryPage() {
             <GalleryCard
               gallery={gallery}
               key={gallery.identifier}
+              likeCount={likeCounts[gallery.identifier] || 0}
               onComment={comments.openComments}
+              onLike={handleLike}
               onOpen={openGalleryDetail}
               onShare={handleShare}
               onTip={tip.openTip}
