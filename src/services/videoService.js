@@ -4,9 +4,11 @@ import {
   requestQortal,
   sanitizeIdentifierSegment,
 } from '../utils/qortalClient';
+import { getQdnResourceUrl } from './qdnResourceService';
 
 export const VIDEO_METADATA_PREFIX = 'iffivabamees_video_';
 const VIDEO_SERVICE = 'DOCUMENT';
+const THUMBNAIL_SERVICE = 'THUMBNAIL';
 
 const normalizeDate = (value) => {
   if (!value) return '';
@@ -58,6 +60,7 @@ export const sanitizeVideoPayload = (payload = {}, summary = {}) => {
     sourceUrl: typeof payload.sourceUrl === 'string' ? payload.sourceUrl.trim() : '',
     thumbnailUrl:
       typeof payload.thumbnailUrl === 'string' ? payload.thumbnailUrl.trim() : '',
+    qdnThumbnail: payload.qdnThumbnail || null,
     qdnVideo: payload.qdnVideo || null,
     authorName:
       typeof payload.authorName === 'string' && payload.authorName.trim()
@@ -122,7 +125,21 @@ const fetchVideoFromSummary = async (summary) => {
     identifier: summary.identifier,
   });
 
-  return sanitizeVideoPayload(resource ?? {}, summary);
+  const video = sanitizeVideoPayload(resource ?? {}, summary);
+  if (!video?.qdnThumbnail || video.thumbnailUrl) {
+    return video;
+  }
+
+  try {
+    const thumbnailUrl = await getQdnResourceUrl(video.qdnThumbnail);
+    return {
+      ...video,
+      thumbnailUrl,
+    };
+  } catch (error) {
+    console.warn('Failed to resolve video thumbnail URL', video.identifier, error);
+    return video;
+  }
 };
 
 export const fetchVideoByIdentifier = async (identifier) => {
@@ -260,10 +277,55 @@ export const fetchVideoPlaylists = async () => {
   return Array.from(playlists).sort((a, b) => a.localeCompare(b));
 };
 
+const publishVideoThumbnail = async ({ file, identifier, authorName, title }) => {
+  if (!file) {
+    return {
+      qdnThumbnail: null,
+      thumbnailUrl: '',
+    };
+  }
+
+  const thumbnailResponse = await requestQortal({
+    action: 'PUBLISH_QDN_RESOURCE',
+    name: authorName,
+    service: THUMBNAIL_SERVICE,
+    identifier,
+    file,
+    filename: file.name || `${identifier}-thumbnail`,
+    title: title || 'Video thumbnail',
+    description: `Thumbnail for ${title || 'untitled video'}`.slice(0, 4000),
+  });
+
+  const qdnThumbnail = {
+    service: THUMBNAIL_SERVICE,
+    name: thumbnailResponse?.name || authorName,
+    identifier: thumbnailResponse?.identifier || identifier,
+    filename: file.name || '',
+  };
+
+  let thumbnailUrl = '';
+  try {
+    thumbnailUrl = await getQdnResourceUrl(qdnThumbnail);
+  } catch (error) {
+    console.warn('Failed to resolve published thumbnail URL', identifier, error);
+  }
+
+  return {
+    qdnThumbnail,
+    thumbnailUrl,
+  };
+};
+
 export const publishVideo = async ({ form, authorName, authorAddress }) => {
   const now = Date.now();
   const identifier = buildVideoIdentifier({ title: form.title, authorName });
   let qdnVideo = null;
+  const thumbnail = await publishVideoThumbnail({
+    file: form.thumbnailFile,
+    identifier,
+    authorName,
+    title: form.title,
+  });
 
   if (form.sourceType === 'upload' && form.videoFile) {
     const videoResponse = await requestQortal({
@@ -296,7 +358,8 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
     publishedDate: form.publishedDate,
     sourceType: form.sourceType,
     sourceUrl: form.sourceUrl,
-    thumbnailUrl: form.thumbnailUrl,
+    thumbnailUrl: thumbnail.thumbnailUrl,
+    qdnThumbnail: thumbnail.qdnThumbnail,
     qdnVideo,
     authorName,
     authorAddress,
@@ -316,6 +379,73 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
   });
 
   return payload;
+};
+
+export const updateVideo = async ({ video, form, authorName }) => {
+  let qdnVideo = video.qdnVideo || null;
+  let qdnThumbnail = video.qdnThumbnail || null;
+  let thumbnailUrl = video.thumbnailUrl || '';
+  const nextSourceType = form.sourceType || video.sourceType || 'qtube';
+
+  if (form.thumbnailFile) {
+    const thumbnail = await publishVideoThumbnail({
+      file: form.thumbnailFile,
+      identifier: video.identifier,
+      authorName,
+      title: form.title || video.title,
+    });
+    qdnThumbnail = thumbnail.qdnThumbnail || qdnThumbnail;
+    thumbnailUrl = thumbnail.thumbnailUrl || thumbnailUrl;
+  }
+
+  if (nextSourceType === 'upload' && form.videoFile) {
+    const videoResponse = await requestQortal({
+      action: 'PUBLISH_QDN_RESOURCE',
+      name: authorName,
+      service: 'VIDEO',
+      identifier: video.identifier,
+      file: form.videoFile,
+      filename: form.videoFile.name || `${video.identifier}.mp4`,
+      title: form.title || video.title || 'Untitled video',
+      description: toPlainText(form.descriptionHtml ?? video.descriptionHtml).slice(0, 4000),
+    });
+
+    qdnVideo = {
+      service: 'VIDEO',
+      name: videoResponse?.name || authorName,
+      identifier: videoResponse?.identifier || video.identifier,
+      filename: form.videoFile.name || video.qdnVideo?.filename || '',
+    };
+  }
+
+  const updatedVideo = sanitizeVideoPayload({
+    ...video,
+    title: form.title,
+    performer: form.performer,
+    descriptionHtml: form.descriptionHtml,
+    descriptionText: toPlainText(form.descriptionHtml),
+    playlist: form.playlist,
+    publishedDate: form.publishedDate,
+    sourceType: nextSourceType,
+    sourceUrl: nextSourceType === 'upload' ? form.sourceUrl || video.sourceUrl : form.sourceUrl,
+    thumbnailUrl,
+    qdnThumbnail,
+    qdnVideo,
+    updated: Date.now(),
+  });
+
+  await requestQortal({
+    action: 'PUBLISH_QDN_RESOURCE',
+    name: authorName,
+    service: VIDEO_SERVICE,
+    identifier: updatedVideo.identifier,
+    data64: encodeObjectToBase64(updatedVideo),
+    encoding: 'base64',
+    title: updatedVideo.title || 'Untitled video',
+    description: updatedVideo.descriptionText.slice(0, 4000),
+  });
+
+  return updatedVideo;
 };
 
 export const updateVideoDescription = async ({ video, descriptionHtml, authorName }) => {

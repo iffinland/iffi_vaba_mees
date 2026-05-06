@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import RichTextEditor from '../common/RichTextEditor';
 import styles from './VideoPublishModal.module.css';
@@ -12,15 +12,42 @@ const initialForm = {
   publishedDate: '',
   sourceType: 'qtube',
   sourceUrl: '',
-  thumbnailUrl: '',
+  thumbnailFile: null,
   videoFile: null,
 };
 
-function VideoPublishModal({ isOpen, isPublishing, onClose, onPublish, playlists }) {
+const toEditForm = (video) => ({
+  title: video?.title || '',
+  performer: video?.performer || '',
+  descriptionHtml: video?.descriptionHtml || '',
+  playlist: video?.playlist || '',
+  newPlaylist: '',
+  publishedDate: video?.publishedDate || '',
+  sourceType: video?.sourceType || 'qtube',
+  sourceUrl: video?.sourceUrl || '',
+  thumbnailFile: null,
+  videoFile: null,
+});
+
+function VideoPublishModal({
+  editVideo,
+  isOpen,
+  isPublishing,
+  onClose,
+  onPublish,
+  playlists,
+}) {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState('');
+  const isEditMode = Boolean(editVideo);
 
   const playlistOptions = useMemo(() => Array.from(new Set(playlists.filter(Boolean))), [playlists]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setForm(editVideo ? toEditForm(editVideo) : initialForm);
+    setError('');
+  }, [editVideo, isOpen]);
 
   if (!isOpen) return null;
 
@@ -40,7 +67,9 @@ function VideoPublishModal({ isOpen, isPublishing, onClose, onPublish, playlists
         ...form,
         playlist: form.newPlaylist.trim() || form.playlist,
       });
-      setForm(initialForm);
+      if (!isEditMode) {
+        setForm(initialForm);
+      }
       onClose();
     } catch (err) {
       setError(err?.message || 'Unable to publish video.');
@@ -51,7 +80,7 @@ function VideoPublishModal({ isOpen, isPublishing, onClose, onPublish, playlists
     <div className={styles.overlay} role="dialog" aria-modal="true">
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2>Publish video</h2>
+          <h2>{isEditMode ? 'Edit video' : 'Publish video'}</h2>
           <button type="button" onClick={onClose} aria-label="Close">
             <FaTimes />
           </button>
@@ -83,6 +112,11 @@ function VideoPublishModal({ isOpen, isPublishing, onClose, onPublish, playlists
                 accept="video/*"
                 onChange={(event) => updateField('videoFile', event.target.files?.[0] || null)}
               />
+              {isEditMode && (
+                <span className={styles.fieldHint}>
+                  Leave empty to keep the current uploaded video.
+                </span>
+              )}
             </label>
           ) : (
             <label>
@@ -100,11 +134,15 @@ function VideoPublishModal({ isOpen, isPublishing, onClose, onPublish, playlists
             <label>
               Thumbnail
               <input
-                type="url"
-                value={form.thumbnailUrl}
-                onChange={(event) => updateField('thumbnailUrl', event.target.value)}
-                placeholder="Optional thumbnail URL"
+                type="file"
+                accept="image/*"
+                onChange={(event) => updateField('thumbnailFile', event.target.files?.[0] || null)}
               />
+              {isEditMode && (
+                <span className={styles.fieldHint}>
+                  Leave empty to keep the current thumbnail.
+                </span>
+              )}
             </label>
             <label>
               Published date
@@ -176,7 +214,7 @@ function VideoPublishModal({ isOpen, isPublishing, onClose, onPublish, playlists
               Cancel
             </button>
             <button type="submit" className={styles.primaryButton} disabled={isPublishing}>
-              {isPublishing ? 'Publishing...' : 'Publish'}
+              {isPublishing ? 'Saving...' : isEditMode ? 'Save changes' : 'Publish'}
             </button>
           </div>
         </form>

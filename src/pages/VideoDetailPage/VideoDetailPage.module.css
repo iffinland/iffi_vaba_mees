@@ -25,6 +25,7 @@
   overflow: hidden;
   background: linear-gradient(135deg, #333, #777);
   box-shadow: 0 22px 45px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .mediaPanel img {
@@ -43,6 +44,26 @@
   justify-content: center;
   font-size: 2rem;
   font-weight: 900;
+}
+
+.videoPlayer {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #000;
+  object-fit: contain;
+}
+
+.playerStatus {
+  position: absolute;
+  inset: auto 1rem 1rem 1rem;
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  background: rgba(0, 0, 0, 0.72);
+  color: #ffe082;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .infoPanel,
@@ -71,7 +92,7 @@
   font-weight: 800;
 }
 
-.openButton,
+.editVideoButton,
 .editorBlock > button,
 .commentActions button,
 .replyEditor > button,
@@ -85,11 +106,12 @@
   cursor: pointer;
 }
 
-.openButton {
+.editVideoButton {
   margin-top: 1rem;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  background: #efefef;
 }
 
 .descriptionSection,

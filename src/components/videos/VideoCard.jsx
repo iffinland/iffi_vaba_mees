@@ -1,7 +1,6 @@
 import {
   FaCommentDots,
   FaEdit,
-  FaExternalLinkAlt,
   FaHeart,
   FaPaperPlane,
   FaPlay,
@@ -36,21 +35,6 @@ function VideoCard({
   onTip,
   video,
 }) {
-  const openVideo = () => {
-    if (video.sourceUrl) {
-      window.open(video.sourceUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    if (video.qdnVideo?.name && video.qdnVideo?.identifier) {
-      window.open(
-        `qortal://VIDEO/${encodeURIComponent(video.qdnVideo.name)}/${encodeURIComponent(video.qdnVideo.identifier)}`,
-        '_blank',
-        'noopener,noreferrer',
-      );
-    }
-  };
-
   const stopCardClick = (event) => {
     event.stopPropagation();
   };
@@ -83,17 +67,6 @@ function VideoCard({
       <div className={styles.cardBody}>
         <div className={styles.titleRow}>
           <h2>{video.title || 'Untitled video'}</h2>
-          <button
-            type="button"
-            onClick={(event) => {
-              stopCardClick(event);
-              openVideo();
-            }}
-            aria-label="Open video"
-            title="Open video"
-          >
-            <FaExternalLinkAlt />
-          </button>
         </div>
         <p className={styles.meta}>{formatDate(video.publishedDate)}</p>
         {video.performer && <p className={styles.performer}>{video.performer}</p>}

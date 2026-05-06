@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { FaEdit, FaExternalLinkAlt, FaReply } from 'react-icons/fa';
+import { FaEdit, FaReply } from 'react-icons/fa';
 import RichTextEditor from '../../components/common/RichTextEditor';
+import VideoPublishModal from '../../components/videos/VideoPublishModal';
+import { useVideoResource } from '../../hooks/useVideoResource';
 import {
   fetchVideoByIdentifier,
   getCurrentUserProfile,
+  updateVideo,
 } from '../../services/videoService';
 import {
   fetchVideoComments,
@@ -12,6 +15,8 @@ import {
   updateVideoComment,
 } from '../../services/videoEngagementService';
 import styles from './VideoDetailPage.module.css';
+
+const OWNER_QORTAL_NAME = 'iffi vaba mees';
 
 const stripHtml = (html = '') =>
   html
@@ -45,6 +50,7 @@ function VideoDetailPage() {
   const [profile, setProfile] = useState({ address: '', name: '', names: [] });
   const [comments, setComments] = useState([]);
   const [draft, setDraft] = useState('');
+  const [isEditVideoOpen, setIsEditVideoOpen] = useState(false);
   const [replyDrafts, setReplyDrafts] = useState({});
   const [editDrafts, setEditDrafts] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -100,20 +106,9 @@ function VideoDetailPage() {
       }));
   }, [comments]);
 
-  const openVideo = () => {
-    if (video?.sourceUrl) {
-      window.open(video.sourceUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    if (video?.qdnVideo?.name && video?.qdnVideo?.identifier) {
-      window.open(
-        `qortal://VIDEO/${encodeURIComponent(video.qdnVideo.name)}/${encodeURIComponent(video.qdnVideo.identifier)}`,
-        '_blank',
-        'noopener,noreferrer',
-      );
-    }
-  };
+  const canEditVideo = profile.name.trim().toLowerCase() === OWNER_QORTAL_NAME;
+  const playlists = video?.playlist ? [video.playlist] : [];
+  const videoResource = useVideoResource(video);
 
   const canEditComment = (comment) =>
     Boolean(
@@ -217,6 +212,30 @@ function VideoDetailPage() {
     }
   };
 
+  const saveVideoEdits = async (form) => {
+    if (!video || !canEditVideo) {
+      throw new Error('Only the site owner can edit this video.');
+    }
+
+    setIsSaving(true);
+    setError('');
+
+    try {
+      const updatedVideo = await updateVideo({
+        video,
+        form,
+        authorName: profile.name,
+      });
+      setVideo(updatedVideo);
+      setIsEditVideoOpen(false);
+    } catch (err) {
+      setError(err?.message || 'Unable to update video.');
+      throw err;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return <p className={styles.status}>Loading video details...</p>;
   }
@@ -236,10 +255,36 @@ function VideoDetailPage() {
 
       <article className={styles.detail}>
         <div className={styles.mediaPanel}>
-          {video.thumbnailUrl ? (
-            <img src={video.thumbnailUrl} alt={video.title || 'Video thumbnail'} />
+          {videoResource.resourceUrl ? (
+            <video
+              aria-label={video.title || 'Video player'}
+              className={styles.videoPlayer}
+              controls
+              poster={video.thumbnailUrl || undefined}
+              preload="metadata"
+              src={videoResource.resourceUrl}
+            />
           ) : (
-            <div className={styles.placeholder}>Video</div>
+            <>
+              {video.thumbnailUrl ? (
+                <img src={video.thumbnailUrl} alt={video.title || 'Video thumbnail'} />
+              ) : (
+                <div className={styles.placeholder}>Video</div>
+              )}
+              <div className={styles.playerStatus}>
+                {videoResource.isLoading ? (
+                  <span>
+                    Video is syncing from QDN
+                    {videoResource.progress ? ` (${videoResource.progress}%)` : '...'}
+                  </span>
+                ) : (
+                  <span>
+                    {videoResource.error ||
+                      'This source cannot be played directly in the video player yet.'}
+                  </span>
+                )}
+              </div>
+            </>
           )}
         </div>
 
@@ -248,10 +293,16 @@ function VideoDetailPage() {
           <p className={styles.meta}>{formatDate(video.publishedDate)}</p>
           {video.performer && <p className={styles.strongMeta}>{video.performer}</p>}
           {video.playlist && <p className={styles.strongMeta}>{video.playlist}</p>}
-          <button type="button" className={styles.openButton} onClick={openVideo}>
-            <FaExternalLinkAlt />
-            <span>Open video</span>
-          </button>
+          {canEditVideo && (
+            <button
+              type="button"
+              className={styles.editVideoButton}
+              onClick={() => setIsEditVideoOpen(true)}
+            >
+              <FaEdit />
+              <span>Edit video</span>
+            </button>
+          )}
         </div>
       </article>
 
@@ -430,6 +481,15 @@ function VideoDetailPage() {
           ))}
         </div>
       </section>
+
+      <VideoPublishModal
+        editVideo={video}
+        isOpen={canEditVideo && isEditVideoOpen}
+        isPublishing={isSaving}
+        onClose={() => setIsEditVideoOpen(false)}
+        onPublish={saveVideoEdits}
+        playlists={playlists}
+      />
     </section>
   );
 }

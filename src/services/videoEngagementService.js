@@ -5,11 +5,12 @@ import {
   sanitizeIdentifierSegment,
 } from '../utils/qortalClient';
 
-const COMMENT_PREFIX = 'iffivabamees_video_comment_';
-const LIKE_PREFIX = 'iffivabamees_video_like_';
+const COMMENT_PREFIX = 'ivm_vc_';
+const LIKE_PREFIX = 'ivm_vl_';
 const PAGE_SIZE = 100;
 
-const toEntityKey = (videoId) => sanitizeIdentifierSegment(videoId).slice(0, 48);
+const toEntityKey = (videoId) => sanitizeIdentifierSegment(videoId).slice(0, 24);
+const toAuthorKey = (value) => sanitizeIdentifierSegment(value).slice(0, 16);
 
 export const fetchVideoComments = async (videoId, limit = 50) => {
   const comments = [];
@@ -160,7 +161,7 @@ export const fetchVideoLikeCount = async (videoId) => {
 };
 
 export const publishVideoLike = async ({ videoId, videoTitle, authorName, authorAddress }) => {
-  const identifier = `${LIKE_PREFIX}${toEntityKey(videoId)}_${sanitizeIdentifierSegment(authorName || authorAddress)}`;
+  const identifier = `${LIKE_PREFIX}${toEntityKey(videoId)}_${toAuthorKey(authorName || authorAddress)}`;
   const payload = {
     id: identifier,
     identifier,
