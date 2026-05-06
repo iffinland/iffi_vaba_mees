@@ -9,6 +9,11 @@ const resolveQortalRequest = () => {
   if (typeof globalThis !== 'undefined' && typeof globalThis.qortalRequest === 'function') {
     return globalThis.qortalRequest;
   }
+  // Qortal UI can expose qortalRequest as an injected global function.
+  if (typeof qortalRequest !== 'undefined' && typeof qortalRequest === 'function') {
+    // eslint-disable-next-line no-undef
+    return qortalRequest;
+  }
   throw new Error('qortalRequest API is not available. Open the Qortal UI first.');
 };
 

@@ -51,8 +51,8 @@
   gap: 0.75rem;
 }
 
-.editorBlock button,
-.replyEditor button,
+.editorBlock > button,
+.replyEditor > button,
 .replyButton {
   align-self: flex-end;
   border: none;
@@ -93,11 +93,45 @@
   line-height: 1.6;
 }
 
+.timestamps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  font-size: 0.9rem;
+}
+
+.editedTimestamp {
+  font-size: 0.82rem;
+  color: #777;
+}
+
+.commentActions,
+.inlineActions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 .replyButton {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   margin-top: 0.7rem;
+  background: #efefef;
+}
+
+.inlineActions button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  background: #ffe082;
+  color: #333;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.inlineActions button:last-child {
   background: #efefef;
 }
 

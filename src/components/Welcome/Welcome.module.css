@@ -2,6 +2,18 @@
   margin-bottom: 4rem;
 }
 
+.notice {
+  position: fixed;
+  top: 1.2rem;
+  right: 1.2rem;
+  z-index: 1100;
+  background: #333;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+}
+
 .titleContainer {
   display: flex;
   align-items: center;

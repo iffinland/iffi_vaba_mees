@@ -9,6 +9,7 @@ import ProjectsPage from './pages/ProjectsPage/ProjectsPage';
 import ContactPage from './pages/ContactPage/ContactPage';
 import GalleryPage from './pages/GalleryPage/GalleryPage';
 import GuestbookPage from './pages/GuestbookPage/GuestbookPage'; // Veendu, et see rida on olemas
+import VideoDetailPage from './pages/VideoDetailPage/VideoDetailPage';
 import VideosPage from './pages/VideosPage/VideosPage';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/videos" element={<VideosPage />} />
+          <Route path="/videos/:videoId" element={<VideoDetailPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/guestbook" element={<GuestbookPage />} />
           {/* Võid lisada ka veateate lehe, kui URL on vale */}

@@ -111,6 +111,37 @@ export const publishVideoComment = async ({
   return payload;
 };
 
+export const updateVideoComment = async ({
+  comment,
+  videoTitle,
+  authorName,
+  authorAddress,
+  messageHtml,
+  messageText,
+}) => {
+  const payload = {
+    ...comment,
+    authorName,
+    authorAddress,
+    messageHtml,
+    messageText,
+    updated: Date.now(),
+  };
+
+  await requestQortal({
+    action: 'PUBLISH_QDN_RESOURCE',
+    name: authorName,
+    service: 'DOCUMENT',
+    identifier: comment.identifier,
+    data64: encodeObjectToBase64(payload),
+    encoding: 'base64',
+    title: `Comment on ${videoTitle || 'video'}`.slice(0, 55),
+    description: messageText.slice(0, 4000),
+  });
+
+  return payload;
+};
+
 export const fetchVideoLikeCount = async (videoId) => {
   const page = await requestQortal({
     action: 'SEARCH_QDN_RESOURCES',

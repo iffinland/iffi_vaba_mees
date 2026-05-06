@@ -6,12 +6,12 @@
   align-items: flex-start;
   justify-content: center;
   padding: 3rem 1rem;
-  z-index: 1000;
+  z-index: 1001;
   overflow: auto;
 }
 
 .modal {
-  width: min(760px, 100%);
+  width: min(720px, 100%);
   background: #fff;
   border-radius: 8px;
   padding: 1.5rem;
@@ -26,9 +26,18 @@
   gap: 1rem;
 }
 
-.header h2 {
+.header {
+  margin-bottom: 1rem;
+}
+
+.header h2,
+.header p {
   margin: 0;
-  font-size: 1.8rem;
+}
+
+.header p {
+  color: #666;
+  margin-top: 0.25rem;
 }
 
 .header button {
@@ -40,45 +49,19 @@
   cursor: pointer;
 }
 
-.form {
-  margin-top: 1.2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.form label,
+.form,
 .fieldGroup {
   display: flex;
   flex-direction: column;
+  gap: 1rem;
+}
+
+.fieldGroup {
   gap: 0.45rem;
   font-weight: 700;
   color: #333;
 }
 
-.form input,
-.form select {
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 0.78rem;
-  font: inherit;
-  background: #fff;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-}
-
-.sourceTabs {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.sourceTabs button,
 .primaryButton,
 .secondaryButton {
   border: none;
@@ -88,19 +71,9 @@
   cursor: pointer;
 }
 
-.sourceTabs button {
-  background: #f0f0f0;
-  color: #333;
-}
-
-.sourceTabs .activeSource {
-  background: #ffe082;
-}
-
 .primaryButton {
   background: linear-gradient(120deg, #ffe082, #ffd54f);
   color: #333;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.14);
 }
 
 .secondaryButton {
@@ -117,10 +90,6 @@
 }
 
 @media (max-width: 700px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-
   .actions {
     flex-direction: column-reverse;
     align-items: stretch;

@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaSearch } from 'react-icons/fa';
 import VideoCard from '../../components/videos/VideoCard';
 import VideoCommentsModal from '../../components/videos/VideoCommentsModal';
+import VideoDescriptionEditModal from '../../components/videos/VideoDescriptionEditModal';
 import VideoPublishModal from '../../components/videos/VideoPublishModal';
 import VideoTipModal from '../../components/videos/VideoTipModal';
 import { useQortTip } from '../../hooks/useQortTip';
@@ -12,7 +14,9 @@ import styles from './VideosPage.module.css';
 const OWNER_QORTAL_NAME = 'iffi vaba mees';
 
 function VideosPage() {
+  const navigate = useNavigate();
   const [isPublishOpen, setIsPublishOpen] = useState(false);
+  const [editingDescriptionVideo, setEditingDescriptionVideo] = useState(null);
   const [toast, setToast] = useState('');
   const {
     error,
@@ -20,12 +24,17 @@ function VideosPage() {
     hasNextPage,
     isLoading,
     isPublishing,
+    isUpdatingVideo,
     likeCounts,
     page,
+    playlists,
     profile,
     publishNewVideo,
+    saveVideoDescription,
     searchQuery,
+    selectedPlaylist,
     setPage,
+    setSelectedPlaylist,
     setSearchQuery,
     setSortOrder,
     sortOrder,
@@ -41,18 +50,13 @@ function VideosPage() {
   const tip = useQortTip({ notify });
   const canPublishVideos = profile.name.trim().toLowerCase() === OWNER_QORTAL_NAME;
 
-  const playlists = useMemo(
-    () => filteredVideos.map((video) => video.playlist).filter(Boolean),
-    [filteredVideos],
-  );
-
   const handlePublish = async (form) => {
     await publishNewVideo(form);
     notify('Video published successfully.');
   };
 
   const handleShare = async (video) => {
-    const route = `${window.location.origin}${window.location.pathname}${window.location.hash || '#/videos'}?video=${encodeURIComponent(video.identifier)}`;
+    const route = `${window.location.origin}${window.location.pathname}#/videos/${encodeURIComponent(video.identifier)}`;
     try {
       await navigator.clipboard.writeText(route);
       notify('Video link copied.');
@@ -68,6 +72,20 @@ function VideosPage() {
     } catch (err) {
       notify(err?.message || 'Unable to like video.');
     }
+  };
+
+  const handleDescriptionSave = async ({ video, descriptionHtml }) => {
+    await saveVideoDescription({ video, descriptionHtml });
+    notify('Video description updated.');
+  };
+
+  const openVideoDetail = (video) => {
+    navigate(`/videos/${encodeURIComponent(video.identifier)}`);
+  };
+
+  const handleCommentPublished = (video) => {
+    comments.closeComments();
+    openVideoDetail(video);
   };
 
   return (
@@ -109,6 +127,21 @@ function VideosPage() {
             <option value="oldest">Oldest first</option>
           </select>
         </label>
+
+        <label className={styles.sortBox}>
+          Playlists
+          <select
+            value={selectedPlaylist}
+            onChange={(event) => setSelectedPlaylist(event.target.value)}
+          >
+            <option value="">All playlists</option>
+            {playlists.map((playlist) => (
+              <option key={playlist} value={playlist}>
+                {playlist}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {error && <p className={styles.error}>{error}</p>}
@@ -121,11 +154,14 @@ function VideosPage() {
         <div className={styles.grid}>
           {filteredVideos.map((video) => (
             <VideoCard
+              canEditDescription={canPublishVideos}
               key={video.identifier}
               video={video}
               likeCount={likeCounts[video.identifier] || 0}
               onComment={comments.openComments}
+              onEditDescription={setEditingDescriptionVideo}
               onLike={handleLike}
+              onOpenDetail={openVideoDetail}
               onShare={handleShare}
               onTip={tip.openTip}
             />
@@ -151,6 +187,14 @@ function VideosPage() {
         playlists={playlists}
       />
 
+      <VideoDescriptionEditModal
+        isOpen={canPublishVideos && Boolean(editingDescriptionVideo)}
+        isSaving={isUpdatingVideo}
+        onClose={() => setEditingDescriptionVideo(null)}
+        onSave={handleDescriptionSave}
+        video={editingDescriptionVideo}
+      />
+
       <VideoTipModal
         amount={tip.amount}
         balance={tip.balance}
@@ -172,7 +216,10 @@ function VideosPage() {
         isOpen={Boolean(comments.activeVideo)}
         isSaving={comments.isSaving}
         onAddComment={comments.addComment}
+        onCommentPublished={handleCommentPublished}
         onClose={comments.closeComments}
+        onEditComment={comments.editComment}
+        profile={profile}
         video={comments.activeVideo}
       />
     </section>

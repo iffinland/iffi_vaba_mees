@@ -160,14 +160,14 @@ function VideoPublishModal({ isOpen, isPublishing, onClose, onPublish, playlists
             </label>
           </div>
 
-          <label>
-            Description
+          <div className={styles.fieldGroup}>
+            <span>Description</span>
             <RichTextEditor
               value={form.descriptionHtml}
               onChange={(value) => updateField('descriptionHtml', value)}
               placeholder="Add notes, links, or context"
             />
-          </label>
+          </div>
 
           {error && <p className={styles.error}>{error}</p>}
 

@@ -125,16 +125,42 @@ const fetchVideoFromSummary = async (summary) => {
   return sanitizeVideoPayload(resource ?? {}, summary);
 };
 
+export const fetchVideoByIdentifier = async (identifier) => {
+  const summaries = await requestQortal({
+    action: 'SEARCH_QDN_RESOURCES',
+    service: VIDEO_SERVICE,
+    mode: 'ALL',
+    identifier,
+    prefix: false,
+    limit: 1,
+    offset: 0,
+    reverse: true,
+    includeStatus: true,
+    includeMetadata: true,
+    excludeBlocked: true,
+    exactMatchNames: false,
+  });
+
+  const summary = Array.isArray(summaries) ? summaries[0] : null;
+  if (!summary) {
+    return null;
+  }
+
+  return fetchVideoFromSummary(summary);
+};
+
 export const fetchVideoPage = async ({
   page = 1,
   pageSize = 9,
+  playlist = '',
   searchQuery = '',
   sortOrder = 'newest',
 }) => {
   const normalizedQuery = searchQuery.trim().toLowerCase();
+  const normalizedPlaylist = playlist.trim().toLowerCase();
   const offset = Math.max(0, page - 1) * pageSize;
 
-  if (normalizedQuery) {
+  if (normalizedQuery || normalizedPlaylist) {
     const matches = [];
     let qdnOffset = 0;
     let hasMore = true;
@@ -156,7 +182,11 @@ export const fetchVideoPage = async ({
           if (!video) continue;
 
           const searchable = `${video.title} ${video.descriptionText}`.toLowerCase();
-          if (searchable.includes(normalizedQuery)) {
+          const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
+          const matchesPlaylist =
+            !normalizedPlaylist || video.playlist.toLowerCase() === normalizedPlaylist;
+
+          if (matchesQuery && matchesPlaylist) {
             matches.push(video);
           }
         } catch (error) {
@@ -196,6 +226,38 @@ export const fetchVideoPage = async ({
     videos,
     hasNextPage: pageItems.length === pageSize,
   };
+};
+
+export const fetchVideoPlaylists = async () => {
+  const playlists = new Set();
+  let offset = 0;
+  const scanLimit = 50;
+
+  while (true) {
+    const summaries = await fetchSummaries({
+      limit: scanLimit,
+      offset,
+      sortOrder: 'newest',
+    });
+    const pageItems = Array.isArray(summaries) ? summaries : [];
+    if (!pageItems.length) break;
+
+    for (const summary of pageItems) {
+      try {
+        const video = await fetchVideoFromSummary(summary);
+        if (video?.playlist) {
+          playlists.add(video.playlist);
+        }
+      } catch (error) {
+        console.error('Failed to fetch video playlist metadata', summary?.identifier, error);
+      }
+    }
+
+    if (pageItems.length < scanLimit) break;
+    offset += pageItems.length;
+  }
+
+  return Array.from(playlists).sort((a, b) => a.localeCompare(b));
 };
 
 export const publishVideo = async ({ form, authorName, authorAddress }) => {
@@ -254,4 +316,26 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
   });
 
   return payload;
+};
+
+export const updateVideoDescription = async ({ video, descriptionHtml, authorName }) => {
+  const updatedVideo = sanitizeVideoPayload({
+    ...video,
+    descriptionHtml,
+    descriptionText: toPlainText(descriptionHtml),
+    updated: Date.now(),
+  });
+
+  await requestQortal({
+    action: 'PUBLISH_QDN_RESOURCE',
+    name: authorName,
+    service: VIDEO_SERVICE,
+    identifier: updatedVideo.identifier,
+    data64: encodeObjectToBase64(updatedVideo),
+    encoding: 'base64',
+    title: updatedVideo.title || 'Untitled video',
+    description: updatedVideo.descriptionText.slice(0, 4000),
+  });
+
+  return updatedVideo;
 };

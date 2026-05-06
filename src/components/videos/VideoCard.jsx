@@ -1,5 +1,6 @@
 import {
   FaCommentDots,
+  FaEdit,
   FaExternalLinkAlt,
   FaHeart,
   FaPaperPlane,
@@ -24,7 +25,17 @@ const formatDate = (value) => {
   });
 };
 
-function VideoCard({ video, likeCount, onComment, onLike, onShare, onTip }) {
+function VideoCard({
+  canEditDescription,
+  likeCount,
+  onComment,
+  onEditDescription,
+  onLike,
+  onOpenDetail,
+  onShare,
+  onTip,
+  video,
+}) {
   const openVideo = () => {
     if (video.sourceUrl) {
       window.open(video.sourceUrl, '_blank', 'noopener,noreferrer');
@@ -40,9 +51,26 @@ function VideoCard({ video, likeCount, onComment, onLike, onShare, onTip }) {
     }
   };
 
+  const stopCardClick = (event) => {
+    event.stopPropagation();
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onOpenDetail(video);
+    }
+  };
+
   return (
-    <article className={styles.card}>
-      <button type="button" className={styles.thumbnail} onClick={openVideo}>
+    <article
+      className={styles.card}
+      onClick={() => onOpenDetail(video)}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+    >
+      <div className={styles.thumbnail}>
         {video.thumbnailUrl ? (
           <img src={video.thumbnailUrl} alt={video.title || 'Video thumbnail'} />
         ) : (
@@ -50,12 +78,20 @@ function VideoCard({ video, likeCount, onComment, onLike, onShare, onTip }) {
             <FaPlay />
           </span>
         )}
-      </button>
+      </div>
 
       <div className={styles.cardBody}>
         <div className={styles.titleRow}>
           <h2>{video.title || 'Untitled video'}</h2>
-          <button type="button" onClick={openVideo} aria-label="Open video" title="Open video">
+          <button
+            type="button"
+            onClick={(event) => {
+              stopCardClick(event);
+              openVideo();
+            }}
+            aria-label="Open video"
+            title="Open video"
+          >
             <FaExternalLinkAlt />
           </button>
         </div>
@@ -65,20 +101,66 @@ function VideoCard({ video, likeCount, onComment, onLike, onShare, onTip }) {
         <p className={styles.description}>
           {truncate(video.descriptionText || 'No description added yet.')}
         </p>
+        {canEditDescription && (
+          <button
+            type="button"
+            className={styles.editDescriptionButton}
+            onClick={(event) => {
+              stopCardClick(event);
+              onEditDescription(video);
+            }}
+            aria-label="Edit video description"
+            title="Edit description"
+          >
+            <FaEdit />
+          </button>
+        )}
       </div>
 
       <div className={styles.actions}>
-        <button type="button" onClick={() => onLike(video)} aria-label="Like video" title="Like">
+        <button
+          type="button"
+          onClick={(event) => {
+            stopCardClick(event);
+            onLike(video);
+          }}
+          aria-label="Like video"
+          title="Like"
+        >
           <FaHeart />
           <span>{likeCount || 0}</span>
         </button>
-        <button type="button" onClick={() => onShare(video)} aria-label="Share video" title="Share">
+        <button
+          type="button"
+          onClick={(event) => {
+            stopCardClick(event);
+            onShare(video);
+          }}
+          aria-label="Share video"
+          title="Share"
+        >
           <FaShareAlt />
         </button>
-        <button type="button" onClick={() => onTip(video)} aria-label="Send tip" title="Send tip">
+        <button
+          type="button"
+          onClick={(event) => {
+            stopCardClick(event);
+            onTip(video);
+          }}
+          aria-label="Send tip"
+          title="Send tip"
+        >
           <FaPaperPlane />
         </button>
-        <button type="button" onClick={() => onComment(video)} aria-label="Add comment" title="Comments">
+        <button
+          type="button"
+          onClick={(event) => {
+            stopCardClick(event);
+            onComment(video);
+          }}
+          aria-label="Add comment"
+          title="Comments"
+        >
           <FaCommentDots />
         </button>
       </div>

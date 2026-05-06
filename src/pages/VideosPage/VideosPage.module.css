@@ -43,6 +43,7 @@
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .searchBox,
@@ -75,6 +76,11 @@
 .sortBox {
   font-weight: 800;
   color: #555;
+  flex: 0 0 auto;
+}
+
+.sortBox select {
+  min-width: 150px;
 }
 
 .grid {

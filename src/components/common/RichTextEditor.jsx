@@ -11,14 +11,20 @@ const commands = [
 
 function RichTextEditor({ value, onChange, placeholder = 'Write here...' }) {
   const editorRef = useRef(null);
+  const isFocusedRef = useRef(false);
 
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
+    if (
+      editorRef.current &&
+      !isFocusedRef.current &&
+      editorRef.current.innerHTML !== value
+    ) {
       editorRef.current.innerHTML = value || '';
     }
   }, [value]);
 
   const runCommand = (command) => {
+    editorRef.current?.focus();
     document.execCommand(command, false, null);
     onChange(editorRef.current?.innerHTML || '');
   };
@@ -26,8 +32,13 @@ function RichTextEditor({ value, onChange, placeholder = 'Write here...' }) {
   const addLink = () => {
     const url = window.prompt('Paste a link');
     if (!url) return;
+    editorRef.current?.focus();
     document.execCommand('createLink', false, url);
     onChange(editorRef.current?.innerHTML || '');
+  };
+
+  const keepEditorSelection = (event) => {
+    event.preventDefault();
   };
 
   return (
@@ -39,12 +50,19 @@ function RichTextEditor({ value, onChange, placeholder = 'Write here...' }) {
             type="button"
             title={item.label}
             aria-label={item.label}
+            onMouseDown={keepEditorSelection}
             onClick={() => runCommand(item.command)}
           >
             {item.icon}
           </button>
         ))}
-        <button type="button" title="Add link" aria-label="Add link" onClick={addLink}>
+        <button
+          type="button"
+          title="Add link"
+          aria-label="Add link"
+          onMouseDown={keepEditorSelection}
+          onClick={addLink}
+        >
           <FaLink />
         </button>
       </div>
@@ -52,7 +70,14 @@ function RichTextEditor({ value, onChange, placeholder = 'Write here...' }) {
         ref={editorRef}
         className={styles.editor}
         contentEditable
+        suppressContentEditableWarning
         data-placeholder={placeholder}
+        onFocus={() => {
+          isFocusedRef.current = true;
+        }}
+        onBlur={() => {
+          isFocusedRef.current = false;
+        }}
         onInput={(event) => onChange(event.currentTarget.innerHTML)}
         role="textbox"
         aria-multiline="true"

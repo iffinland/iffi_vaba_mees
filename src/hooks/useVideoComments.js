@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import {
   fetchVideoComments,
   publishVideoComment,
+  updateVideoComment,
 } from '../services/videoEngagementService';
 
 const toPlainText = (html = '') =>
@@ -73,11 +74,56 @@ export const useVideoComments = ({ profile, notify }) => {
     [activeVideo, notify, profile.address, profile.name],
   );
 
+  const editComment = useCallback(
+    async ({ comment, messageHtml }) => {
+      if (!activeVideo) return false;
+      if (!profile.name || !profile.address) {
+        setError('A Qortal account with a registered name is required.');
+        return false;
+      }
+
+      const isAuthor =
+        comment.authorAddress === profile.address || comment.authorName === profile.name;
+      if (!isAuthor) {
+        setError('Only the comment author can edit this comment.');
+        return false;
+      }
+
+      setIsSaving(true);
+      setError('');
+
+      try {
+        const updatedComment = await updateVideoComment({
+          comment,
+          videoTitle: activeVideo.title,
+          authorName: profile.name,
+          authorAddress: profile.address,
+          messageHtml,
+          messageText: toPlainText(messageHtml),
+        });
+        setComments((current) =>
+          current.map((item) =>
+            item.identifier === updatedComment.identifier ? updatedComment : item,
+          ),
+        );
+        notify?.('Comment updated.');
+        return true;
+      } catch (err) {
+        setError(err?.message || 'Unable to update comment.');
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [activeVideo, notify, profile.address, profile.name],
+  );
+
   return {
     activeVideo,
     addComment,
     closeComments,
     comments,
+    editComment,
     error,
     isLoading,
     isSaving,

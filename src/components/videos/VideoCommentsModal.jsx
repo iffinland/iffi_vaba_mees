@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FaReply, FaTimes } from 'react-icons/fa';
+import { FaEdit, FaReply, FaTimes } from 'react-icons/fa';
 import RichTextEditor from '../common/RichTextEditor';
 import styles from './VideoCommentsModal.module.css';
 
@@ -20,8 +20,21 @@ const formatDate = (value) => {
   });
 };
 
-function VideoCommentsModal({ comments, error, isLoading, isOpen, isSaving, onAddComment, onClose, video }) {
+function VideoCommentsModal({
+  comments,
+  error,
+  isLoading,
+  isOpen,
+  isSaving,
+  onAddComment,
+  onCommentPublished,
+  onClose,
+  onEditComment,
+  profile,
+  video,
+}) {
   const [draft, setDraft] = useState('');
+  const [editDrafts, setEditDrafts] = useState({});
   const [replyDrafts, setReplyDrafts] = useState({});
 
   const groups = useMemo(() => {
@@ -45,7 +58,10 @@ function VideoCommentsModal({ comments, error, isLoading, isOpen, isSaving, onAd
   const submitComment = async () => {
     if (!stripHtml(draft)) return;
     const saved = await onAddComment({ messageHtml: draft });
-    if (saved) setDraft('');
+    if (saved) {
+      setDraft('');
+      onCommentPublished?.(video);
+    }
   };
 
   const submitReply = async (parentId) => {
@@ -58,7 +74,35 @@ function VideoCommentsModal({ comments, error, isLoading, isOpen, isSaving, onAd
         delete next[parentId];
         return next;
       });
+      onCommentPublished?.(video);
     }
+  };
+
+  const submitEdit = async (comment) => {
+    const messageHtml = editDrafts[comment.id] || '';
+    if (!stripHtml(messageHtml)) return;
+    const saved = await onEditComment({ comment, messageHtml });
+    if (saved) {
+      setEditDrafts((current) => {
+        const next = { ...current };
+        delete next[comment.id];
+        return next;
+      });
+    }
+  };
+
+  const canEditComment = (comment) =>
+    Boolean(
+      profile?.address &&
+        (comment.authorAddress === profile.address || comment.authorName === profile.name),
+    );
+
+  const renderEditedTimestamp = (comment) => {
+    if (!comment.updated || !comment.created || comment.updated <= comment.created) {
+      return null;
+    }
+
+    return <span className={styles.editedTimestamp}>Edited {formatDate(comment.updated)}</span>;
   };
 
   return (
@@ -90,22 +134,74 @@ function VideoCommentsModal({ comments, error, isLoading, isOpen, isSaving, onAd
             <div key={comment.id} className={styles.comment}>
               <div className={styles.commentHeader}>
                 <strong>{comment.authorName}</strong>
-                <span>{formatDate(comment.created)}</span>
+                <div className={styles.timestamps}>
+                  <span>{formatDate(comment.created)}</span>
+                  {renderEditedTimestamp(comment)}
+                </div>
               </div>
-              <div className={styles.commentBody} dangerouslySetInnerHTML={{ __html: comment.messageHtml }} />
-              <button
-                type="button"
-                className={styles.replyButton}
-                onClick={() =>
-                  setReplyDrafts((current) => ({
-                    ...current,
-                    [comment.id]: current[comment.id] || '',
-                  }))
-                }
-              >
-                <FaReply />
-                Reply
-              </button>
+              {editDrafts[comment.id] !== undefined ? (
+                <div className={styles.replyEditor}>
+                  <RichTextEditor
+                    value={editDrafts[comment.id]}
+                    onChange={(value) =>
+                      setEditDrafts((current) => ({
+                        ...current,
+                        [comment.id]: value,
+                      }))
+                    }
+                    placeholder="Edit your comment"
+                  />
+                  <div className={styles.inlineActions}>
+                    <button type="button" onClick={() => submitEdit(comment)} disabled={isSaving}>
+                      {isSaving ? 'Saving...' : 'Save changes'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditDrafts((current) => {
+                          const next = { ...current };
+                          delete next[comment.id];
+                          return next;
+                        })
+                      }
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.commentBody} dangerouslySetInnerHTML={{ __html: comment.messageHtml }} />
+              )}
+              <div className={styles.commentActions}>
+                <button
+                  type="button"
+                  className={styles.replyButton}
+                  onClick={() =>
+                    setReplyDrafts((current) => ({
+                      ...current,
+                      [comment.id]: current[comment.id] || '',
+                    }))
+                  }
+                >
+                  <FaReply />
+                  Reply
+                </button>
+                {canEditComment(comment) && (
+                  <button
+                    type="button"
+                    className={styles.replyButton}
+                    onClick={() =>
+                      setEditDrafts((current) => ({
+                        ...current,
+                        [comment.id]: current[comment.id] || comment.messageHtml,
+                      }))
+                    }
+                  >
+                    <FaEdit />
+                    Edit
+                  </button>
+                )}
+              </div>
 
               {replyDrafts[comment.id] !== undefined && (
                 <div className={styles.replyEditor}>
@@ -131,9 +227,61 @@ function VideoCommentsModal({ comments, error, isLoading, isOpen, isSaving, onAd
                     <div key={reply.id} className={styles.reply}>
                       <div className={styles.commentHeader}>
                         <strong>{reply.authorName}</strong>
-                        <span>{formatDate(reply.created)}</span>
+                        <div className={styles.timestamps}>
+                          <span>{formatDate(reply.created)}</span>
+                          {renderEditedTimestamp(reply)}
+                        </div>
                       </div>
-                      <div dangerouslySetInnerHTML={{ __html: reply.messageHtml }} />
+                      {editDrafts[reply.id] !== undefined ? (
+                        <div className={styles.replyEditor}>
+                          <RichTextEditor
+                            value={editDrafts[reply.id]}
+                            onChange={(value) =>
+                              setEditDrafts((current) => ({
+                                ...current,
+                                [reply.id]: value,
+                              }))
+                            }
+                            placeholder="Edit your reply"
+                          />
+                          <div className={styles.inlineActions}>
+                            <button type="button" onClick={() => submitEdit(reply)} disabled={isSaving}>
+                              {isSaving ? 'Saving...' : 'Save changes'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditDrafts((current) => {
+                                  const next = { ...current };
+                                  delete next[reply.id];
+                                  return next;
+                                })
+                              }
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div dangerouslySetInnerHTML={{ __html: reply.messageHtml }} />
+                      )}
+                      {canEditComment(reply) && editDrafts[reply.id] === undefined && (
+                        <div className={styles.commentActions}>
+                          <button
+                            type="button"
+                            className={styles.replyButton}
+                            onClick={() =>
+                              setEditDrafts((current) => ({
+                                ...current,
+                                [reply.id]: current[reply.id] || reply.messageHtml,
+                              }))
+                            }
+                          >
+                            <FaEdit />
+                            Edit
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
