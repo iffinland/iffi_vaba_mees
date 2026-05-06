@@ -143,6 +143,9 @@ function VideoPublishModal({
                   Leave empty to keep the current thumbnail.
                 </span>
               )}
+              <span className={styles.fieldHint}>
+                Image file only. Maximum upload size: 5 MB.
+              </span>
             </label>
             <label>
               Published date

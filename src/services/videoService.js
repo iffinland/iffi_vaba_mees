@@ -9,6 +9,71 @@ import { getQdnResourceUrl } from './qdnResourceService';
 export const VIDEO_METADATA_PREFIX = 'iffivabamees_video_';
 const VIDEO_SERVICE = 'DOCUMENT';
 const THUMBNAIL_SERVICE = 'THUMBNAIL';
+const MAX_THUMBNAIL_UPLOAD_BYTES = 5 * 1024 * 1024;
+const MAX_QDN_THUMBNAIL_BYTES = 500000;
+const THUMBNAIL_CANVAS_MAX_SIZE = 1280;
+
+const loadImageFile = (file) =>
+  new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Thumbnail image could not be processed.'));
+    };
+    image.src = url;
+  });
+
+const getBase64ByteSize = (base64) => {
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+  return Math.floor((base64.length * 3) / 4) - padding;
+};
+
+const renderThumbnailBase64 = async (file) => {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Thumbnail must be an image file.');
+  }
+
+  if (file.size > MAX_THUMBNAIL_UPLOAD_BYTES) {
+    throw new Error('Thumbnail image is too large. Maximum upload size is 5 MB.');
+  }
+
+  const image = await loadImageFile(file);
+  const ratio = Math.min(1, THUMBNAIL_CANVAS_MAX_SIZE / Math.max(image.width, image.height));
+  let width = Math.max(1, Math.round(image.width * ratio));
+  let height = Math.max(1, Math.round(image.height * ratio));
+
+  for (let scaleAttempt = 0; scaleAttempt < 5; scaleAttempt += 1) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error('Thumbnail image processing is not available.');
+    }
+
+    context.drawImage(image, 0, 0, width, height);
+
+    for (const quality of [0.9, 0.8, 0.7, 0.6, 0.5]) {
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      const base64 = dataUrl.split(',')[1] || '';
+
+      if (getBase64ByteSize(base64) <= MAX_QDN_THUMBNAIL_BYTES) {
+        return base64;
+      }
+    }
+
+    width = Math.max(1, Math.round(width * 0.82));
+    height = Math.max(1, Math.round(height * 0.82));
+  }
+
+  throw new Error('Thumbnail image could not be optimized for QDN. Try a smaller image.');
+};
 
 const normalizeDate = (value) => {
   if (!value) return '';
@@ -285,13 +350,15 @@ const publishVideoThumbnail = async ({ file, identifier, authorName, title }) =>
     };
   }
 
+  const data64 = await renderThumbnailBase64(file);
+
   const thumbnailResponse = await requestQortal({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: THUMBNAIL_SERVICE,
     identifier,
-    file,
-    filename: file.name || `${identifier}-thumbnail`,
+    data64,
+    encoding: 'base64',
     title: title || 'Video thumbnail',
     description: `Thumbnail for ${title || 'untitled video'}`.slice(0, 4000),
   });
