@@ -3,6 +3,7 @@ import {
   FaCommentDots,
   FaEdit,
   FaHeart,
+  FaLink,
   FaPaperPlane,
   FaPlay,
   FaShareAlt,
@@ -33,6 +34,7 @@ function VideoCard({
   onEditDescription,
   onLike,
   onOpenDetail,
+  onPostToChat,
   onShare,
   onTip,
   video,
@@ -161,6 +163,17 @@ function VideoCard({
           title="Share"
         >
           <FaShareAlt />
+        </button>
+        <button
+          type="button"
+          onClick={(event) => {
+            stopCardClick(event);
+            onPostToChat(video);
+          }}
+          aria-label="Copy chat embed link"
+          title="Copy chat embed link"
+        >
+          <FaLink />
         </button>
         <button
           type="button"

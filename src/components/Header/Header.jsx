@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
 import styles from './Header.module.css';
-import { FaImages, FaBookOpen, FaPenSquare, FaVideo, FaEnvelope } from 'react-icons/fa';
+import { FaImages, FaBookOpen, FaPenSquare, FaVideo, FaEnvelope, FaHome } from 'react-icons/fa';
 
 function Header() {
   return (
     <header className={styles.header}>
-      <Link to="/" className={styles.siteNameLink}><h1 className={styles.siteName}>iffi vaba mees</h1></Link>
       <nav className={styles.navigation}>
+        <Link to="/" className={styles.navButton} aria-label="Home">
+          <FaHome />
+        </Link>
         <Link to="/gallery" className={styles.navButton} aria-label="Gallery">
           <FaImages />
         </Link>

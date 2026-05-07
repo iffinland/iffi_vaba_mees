@@ -9,6 +9,11 @@ import VideoTipModal from '../../components/videos/VideoTipModal';
 import { useQortTip } from '../../hooks/useQortTip';
 import { useVideoComments } from '../../hooks/useVideoComments';
 import { useVideos } from '../../hooks/useVideos';
+import {
+  buildVideoChatEmbedLink,
+  buildVideoPageLink,
+  copyTextToClipboard,
+} from '../../utils/videoLinks';
 import styles from './VideosPage.module.css';
 
 const OWNER_QORTAL_NAME = 'iffi vaba mees';
@@ -56,12 +61,27 @@ function VideosPage() {
   };
 
   const handleShare = async (video) => {
-    const route = `${window.location.origin}${window.location.pathname}#/videos/${encodeURIComponent(video.identifier)}`;
     try {
-      await navigator.clipboard.writeText(route);
+      await copyTextToClipboard(buildVideoPageLink(video));
       notify('Video link copied.');
     } catch {
       notify('Unable to copy link.');
+    }
+  };
+
+  const handlePostToChat = async (video) => {
+    const chatLink = buildVideoChatEmbedLink(video);
+
+    if (!chatLink) {
+      notify('Chat embed link is unavailable for this video.');
+      return;
+    }
+
+    try {
+      await copyTextToClipboard(chatLink);
+      notify('Chat embed link copied.');
+    } catch {
+      notify('Unable to copy chat embed link.');
     }
   };
 
@@ -162,6 +182,7 @@ function VideosPage() {
               onEditDescription={setEditingDescriptionVideo}
               onLike={handleLike}
               onOpenDetail={openVideoDetail}
+              onPostToChat={handlePostToChat}
               onShare={handleShare}
               onTip={tip.openTip}
             />
