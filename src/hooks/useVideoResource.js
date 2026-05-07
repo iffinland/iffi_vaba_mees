@@ -10,60 +10,88 @@ const directVideoExtensionPattern = /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i;
 
 const trimString = (value) => (typeof value === 'string' ? value.trim() : '');
 
+const extractEmbeddedSource = (value) => {
+  const input = trimString(value);
+  if (!input) return '';
+
+  const attributePattern = /\b(?:src|href)=["']([^"']+)["']/gi;
+  const matches = Array.from(input.matchAll(attributePattern)).map((match) => match[1]);
+  const preferred = matches.find((match) =>
+    /^\/arbitrary\/VIDEO\//i.test(match) ||
+    directVideoExtensionPattern.test(match),
+  );
+
+  return preferred || input;
+};
+
+const toUrl = (value) => {
+  try {
+    return new URL(value);
+  } catch {
+    try {
+      const baseUrl =
+        typeof window !== 'undefined' && window.location?.origin
+          ? window.location.origin
+          : 'http://localhost';
+      return new URL(value, baseUrl);
+    } catch {
+      return null;
+    }
+  }
+};
+
+const buildArbitraryPath = ({ service, name, identifier }) =>
+  `/arbitrary/${encodeURIComponent(service)}/${encodeURIComponent(name)}/${encodeURIComponent(identifier)}`;
+
+const toDirectVideoSource = (resource, directUrl = '') => ({
+  type: 'direct',
+  resource,
+  directUrl: directUrl || buildArbitraryPath(resource),
+});
+
 const parseQortalVideoLink = (sourceUrl) => {
-  const value = trimString(sourceUrl);
+  const value = extractEmbeddedSource(sourceUrl);
   if (!value) return null;
 
-  try {
-    const url = new URL(value);
+  const url = toUrl(value);
+  if (!url) return null;
 
-    if (url.protocol === 'qortal:' && url.hostname.toUpperCase() === 'VIDEO') {
-      const [name, identifier] = url.pathname
-        .split('/')
-        .filter(Boolean)
-        .map((part) => decodeURIComponent(part));
+  if (url.protocol === 'qortal:' && url.hostname.toUpperCase() === 'VIDEO') {
+    const [name, identifier] = url.pathname
+      .split('/')
+      .filter(Boolean)
+      .map((part) => decodeURIComponent(part));
 
-      if (name && identifier) {
-        return { type: 'direct', resource: { service: 'VIDEO', name, identifier } };
-      }
+    if (name && identifier) {
+      const resource = { service: 'VIDEO', name, identifier };
+      return toDirectVideoSource(resource);
     }
+  }
 
-    if (url.protocol === 'qortal:' && url.hostname === 'use-embed') {
-      const service = url.pathname.replace(/^\/+/, '') || url.searchParams.get('service');
-      const name = url.searchParams.get('name');
-      const identifier = url.searchParams.get('identifier');
+  const pathParts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
 
-      if (service?.toUpperCase() === 'VIDEO' && name && identifier) {
-        return { type: 'direct', resource: { service: 'VIDEO', name, identifier } };
-      }
+  if (
+    url.protocol === 'qortal:' &&
+    url.hostname.toUpperCase() === 'APP' &&
+    pathParts[0]?.toLowerCase() === 'q-tube' &&
+    pathParts[1]?.toLowerCase() === 'video'
+  ) {
+    const name = pathParts[2];
+    const identifier = pathParts[3];
+
+    if (name && identifier) {
+      return { type: 'qtube', name, identifier };
     }
+  }
 
-    const pathParts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+  const arbitraryIndex = pathParts.findIndex((part) => part.toLowerCase() === 'arbitrary');
+  const service = pathParts[arbitraryIndex + 1];
+  const name = pathParts[arbitraryIndex + 2];
+  const identifier = pathParts[arbitraryIndex + 3];
 
-    if (
-      url.protocol === 'qortal:' &&
-      url.hostname.toUpperCase() === 'APP' &&
-      pathParts[0]?.toLowerCase() === 'q-tube' &&
-      pathParts[1]?.toLowerCase() === 'video'
-    ) {
-      const name = pathParts[2];
-      const identifier = pathParts[3];
-
-      if (name && identifier) {
-        return { type: 'qtube', name, identifier };
-      }
-    }
-
-    const arbitraryIndex = pathParts.findIndex((part) => part.toLowerCase() === 'arbitrary');
-    const service = pathParts[arbitraryIndex + 1];
-    const name = pathParts[arbitraryIndex + 2];
-    const identifier = pathParts[arbitraryIndex + 3];
-
-    if (arbitraryIndex >= 0 && service?.toUpperCase() === 'VIDEO' && name && identifier) {
-      return { type: 'direct', resource: { service: 'VIDEO', name, identifier } };
-    }
-  } catch {
-    return null;
+  if (arbitraryIndex >= 0 && service?.toUpperCase() === 'VIDEO' && name && identifier) {
+    const resource = { service: 'VIDEO', name, identifier };
+    return toDirectVideoSource(resource, buildArbitraryPath(resource));
   }
 
   return null;
@@ -241,21 +269,26 @@ const resolveQTubeResources = async ({ name, identifier }) => {
 
 const resolveVideoResources = async (videoSource) => {
   if (!videoSource) return [];
-  if (videoSource.type === 'direct') return [videoSource.resource];
+  if (videoSource.type === 'direct') {
+    return [
+      {
+        directUrl: videoSource.directUrl || '',
+        resource: videoSource.resource,
+      },
+    ];
+  }
   if (videoSource.type === 'qtube') return resolveQTubeResources(videoSource);
   return [];
 };
 
 const isDirectVideoUrl = (sourceUrl) => {
-  const value = trimString(sourceUrl);
+  const value = extractEmbeddedSource(sourceUrl);
   if (!value) return false;
 
-  try {
-    const url = new URL(value);
-    return ['http:', 'https:'].includes(url.protocol) && directVideoExtensionPattern.test(url.pathname);
-  } catch {
-    return false;
-  }
+  const url = toUrl(value);
+  return Boolean(
+    url && ['http:', 'https:'].includes(url.protocol) && directVideoExtensionPattern.test(url.pathname),
+  );
 };
 
 export const useVideoResource = (video, { enabled = true } = {}) => {
@@ -295,7 +328,13 @@ export const useVideoResource = (video, { enabled = true } = {}) => {
       try {
         let latestError = '';
 
-        for (const qdnResource of qdnResources) {
+        for (const candidate of qdnResources) {
+          if (candidate.directUrl) {
+            setResourceUrl(candidate.directUrl);
+            return;
+          }
+
+          const qdnResource = candidate.resource || candidate;
           const readyStatus = await waitForQdnResourceReady({
             ...qdnResource,
             onStatusChange: (nextStatus) => {
