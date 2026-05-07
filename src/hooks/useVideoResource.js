@@ -7,8 +7,18 @@ import {
 import { requestQortal } from '../utils/qortalClient';
 
 const directVideoExtensionPattern = /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i;
+const qTubeLinkPattern = /qortal:\/\/APP\/Q-Tube\/video\/([^"'<>\s]+)\/([^"'<>\s]+)/i;
+const qdnVideoLinkPattern = /qortal:\/\/VIDEO\/([^"'<>\s]+)\/([^"'<>\s]+)/i;
 
 const trimString = (value) => (typeof value === 'string' ? value.trim() : '');
+
+const decodePathPart = (value) => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
 
 const extractEmbeddedSource = (value) => {
   const input = trimString(value);
@@ -18,10 +28,20 @@ const extractEmbeddedSource = (value) => {
   const matches = Array.from(input.matchAll(attributePattern)).map((match) => match[1]);
   const preferred = matches.find((match) =>
     /^\/arbitrary\/VIDEO\//i.test(match) ||
+    /^qortal:\/\/APP\/Q-Tube\/video\//i.test(match) ||
+    /^qortal:\/\/VIDEO\//i.test(match) ||
     directVideoExtensionPattern.test(match),
   );
 
-  return preferred || input;
+  if (preferred) return preferred;
+
+  const qTubeMatch = input.match(qTubeLinkPattern);
+  if (qTubeMatch) return qTubeMatch[0];
+
+  const qdnVideoMatch = input.match(qdnVideoLinkPattern);
+  if (qdnVideoMatch) return qdnVideoMatch[0];
+
+  return input;
 };
 
 const toUrl = (value) => {
@@ -49,9 +69,33 @@ const toDirectVideoSource = (resource, directUrl = '') => ({
   directUrl: directUrl || buildArbitraryPath(resource),
 });
 
+const toDirectVideoCandidate = (resource) => ({
+  directUrl: buildArbitraryPath(resource),
+  resource,
+});
+
 const parseQortalVideoLink = (sourceUrl) => {
   const value = extractEmbeddedSource(sourceUrl);
   if (!value) return null;
+
+  const rawQTubeMatch = value.match(qTubeLinkPattern);
+  if (rawQTubeMatch) {
+    const name = decodePathPart(rawQTubeMatch[1]);
+    const identifier = decodePathPart(rawQTubeMatch[2]);
+    if (name && identifier) {
+      return { type: 'qtube', name, identifier };
+    }
+  }
+
+  const rawQdnVideoMatch = value.match(qdnVideoLinkPattern);
+  if (rawQdnVideoMatch) {
+    const name = decodePathPart(rawQdnVideoMatch[1]);
+    const identifier = decodePathPart(rawQdnVideoMatch[2]);
+    if (name && identifier) {
+      const resource = { service: 'VIDEO', name, identifier };
+      return toDirectVideoSource(resource);
+    }
+  }
 
   const url = toUrl(value);
   if (!url) return null;
@@ -237,6 +281,14 @@ const findQTubeVideoResources = async ({ name, identifier }) => {
 const resolveQTubeResources = async ({ name, identifier }) => {
   const resources = [];
 
+  if (identifier.endsWith('_metadata')) {
+    resources.push({
+      service: 'VIDEO',
+      name,
+      identifier: identifier.replace(/_metadata$/, ''),
+    });
+  }
+
   for (const service of ['DOCUMENT', 'JSON']) {
     try {
       const metadata = await requestQortal({
@@ -254,17 +306,9 @@ const resolveQTubeResources = async ({ name, identifier }) => {
     }
   }
 
-  if (identifier.endsWith('_metadata')) {
-    resources.push({
-      service: 'VIDEO',
-      name,
-      identifier: identifier.replace(/_metadata$/, ''),
-    });
-  }
-
   resources.push(...(await findQTubeVideoResources({ name, identifier })));
 
-  return uniqueResources(resources);
+  return uniqueResources(resources).map(toDirectVideoCandidate);
 };
 
 const resolveVideoResources = async (videoSource) => {
