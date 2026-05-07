@@ -9,9 +9,12 @@ import { getQdnResourceUrl } from './qdnResourceService';
 export const VIDEO_METADATA_PREFIX = 'iffivabamees_video_';
 const VIDEO_SERVICE = 'DOCUMENT';
 const THUMBNAIL_SERVICE = 'THUMBNAIL';
+const MAX_QDN_IDENTIFIER_LENGTH = 60;
 const MAX_THUMBNAIL_UPLOAD_BYTES = 5 * 1024 * 1024;
 const MAX_QDN_THUMBNAIL_BYTES = 500000;
 const THUMBNAIL_CANVAS_MAX_SIZE = 1280;
+const MAX_QDN_METADATA_TITLE_LENGTH = 80;
+const MAX_QDN_METADATA_DESCRIPTION_LENGTH = 240;
 
 const loadImageFile = (file) =>
   new Promise((resolve, reject) => {
@@ -88,13 +91,34 @@ const toPlainText = (html = '') =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const toQdnMetadataText = (value, maxLength) => {
+  const normalized = String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, Math.max(0, maxLength - 3)).trim()}...`;
+};
+
+const toQdnTitle = (value, fallback) =>
+  toQdnMetadataText(value || fallback, MAX_QDN_METADATA_TITLE_LENGTH) || fallback;
+
+const toQdnDescription = (value, fallback = '') =>
+  toQdnMetadataText(value || fallback, MAX_QDN_METADATA_DESCRIPTION_LENGTH);
+
 export const buildVideoIdentifier = ({ title, authorName }) => {
-  const base =
+  const rawBase =
     sanitizeIdentifierSegment(title) ||
     sanitizeIdentifierSegment(authorName) ||
     'untitled-video';
+  const suffix = `${Date.now().toString(36)}_${createShortId()}`;
+  const maxBaseLength = Math.max(
+    8,
+    MAX_QDN_IDENTIFIER_LENGTH - VIDEO_METADATA_PREFIX.length - suffix.length - 1,
+  );
+  const base = rawBase.slice(0, maxBaseLength).replace(/-+$/g, '') || 'video';
 
-  return `${VIDEO_METADATA_PREFIX}${base}_${Date.now()}_${createShortId()}`;
+  return `${VIDEO_METADATA_PREFIX}${base}_${suffix}`;
 };
 
 export const sanitizeVideoPayload = (payload = {}, summary = {}) => {
@@ -359,8 +383,8 @@ const publishVideoThumbnail = async ({ file, identifier, authorName, title }) =>
     identifier,
     data64,
     encoding: 'base64',
-    title: title || 'Video thumbnail',
-    description: `Thumbnail for ${title || 'untitled video'}`.slice(0, 4000),
+    title: toQdnTitle(title, 'Video thumbnail'),
+    description: toQdnDescription(`Thumbnail for ${title || 'untitled video'}`),
   });
 
   const qdnThumbnail = {
@@ -402,8 +426,8 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
       identifier,
       file: form.videoFile,
       filename: form.videoFile.name || `${identifier}.mp4`,
-      title: form.title || 'Untitled video',
-      description: toPlainText(form.descriptionHtml).slice(0, 4000),
+      title: toQdnTitle(form.title, 'Untitled video'),
+      description: toQdnDescription(toPlainText(form.descriptionHtml), 'Uploaded video'),
     });
 
     qdnVideo = {
@@ -441,8 +465,8 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
     identifier,
     data64: encodeObjectToBase64(payload),
     encoding: 'base64',
-    title: payload.title || 'Untitled video',
-    description: payload.descriptionText.slice(0, 4000),
+    title: toQdnTitle(payload.title, 'Untitled video'),
+    description: toQdnDescription(payload.descriptionText, 'Video metadata'),
   });
 
   return payload;
@@ -473,8 +497,11 @@ export const updateVideo = async ({ video, form, authorName }) => {
       identifier: video.identifier,
       file: form.videoFile,
       filename: form.videoFile.name || `${video.identifier}.mp4`,
-      title: form.title || video.title || 'Untitled video',
-      description: toPlainText(form.descriptionHtml ?? video.descriptionHtml).slice(0, 4000),
+      title: toQdnTitle(form.title || video.title, 'Untitled video'),
+      description: toQdnDescription(
+        toPlainText(form.descriptionHtml ?? video.descriptionHtml),
+        'Uploaded video',
+      ),
     });
 
     qdnVideo = {
@@ -508,8 +535,8 @@ export const updateVideo = async ({ video, form, authorName }) => {
     identifier: updatedVideo.identifier,
     data64: encodeObjectToBase64(updatedVideo),
     encoding: 'base64',
-    title: updatedVideo.title || 'Untitled video',
-    description: updatedVideo.descriptionText.slice(0, 4000),
+    title: toQdnTitle(updatedVideo.title, 'Untitled video'),
+    description: toQdnDescription(updatedVideo.descriptionText, 'Video metadata'),
   });
 
   return updatedVideo;
@@ -530,8 +557,8 @@ export const updateVideoDescription = async ({ video, descriptionHtml, authorNam
     identifier: updatedVideo.identifier,
     data64: encodeObjectToBase64(updatedVideo),
     encoding: 'base64',
-    title: updatedVideo.title || 'Untitled video',
-    description: updatedVideo.descriptionText.slice(0, 4000),
+    title: toQdnTitle(updatedVideo.title, 'Untitled video'),
+    description: toQdnDescription(updatedVideo.descriptionText, 'Video metadata'),
   });
 
   return updatedVideo;

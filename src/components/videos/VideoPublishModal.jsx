@@ -58,6 +58,15 @@ function VideoPublishModal({
     }));
   };
 
+  const updateSourceType = (sourceType) => {
+    setForm((current) => ({
+      ...current,
+      sourceType,
+      sourceUrl: sourceType === 'upload' ? '' : current.sourceUrl,
+      videoFile: sourceType === 'upload' ? current.videoFile : null,
+    }));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -97,12 +106,16 @@ function VideoPublishModal({
                 key={value}
                 type="button"
                 className={form.sourceType === value ? styles.activeSource : ''}
-                onClick={() => updateField('sourceType', value)}
+                onClick={() => updateSourceType(value)}
               >
                 {label}
               </button>
             ))}
           </div>
+          <p className={styles.sourceHint}>
+            All fields are optional. Playback needs an uploaded video file or a working
+            QDN video link.
+          </p>
 
           {form.sourceType === 'upload' ? (
             <label>
@@ -132,7 +145,7 @@ function VideoPublishModal({
 
           <div className={styles.grid}>
             <label>
-              Thumbnail
+              Thumbnail image
               <input
                 type="file"
                 accept="image/*"

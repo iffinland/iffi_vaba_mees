@@ -103,6 +103,14 @@
   background: #ffe082;
 }
 
+.sourceHint {
+  margin: -0.35rem 0 0;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
 .primaryButton {
   background: linear-gradient(120deg, #ffe082, #ffd54f);
   color: #333;

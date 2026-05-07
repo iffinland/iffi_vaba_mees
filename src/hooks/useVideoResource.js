@@ -4,6 +4,7 @@ import {
   isQdnResourceReady,
   waitForQdnResourceReady,
 } from '../services/qdnResourceService';
+import { requestQortal } from '../utils/qortalClient';
 
 const directVideoExtensionPattern = /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i;
 
@@ -23,7 +24,7 @@ const parseQortalVideoLink = (sourceUrl) => {
         .map((part) => decodeURIComponent(part));
 
       if (name && identifier) {
-        return { service: 'VIDEO', name, identifier };
+        return { type: 'direct', resource: { service: 'VIDEO', name, identifier } };
       }
     }
 
@@ -33,18 +34,33 @@ const parseQortalVideoLink = (sourceUrl) => {
       const identifier = url.searchParams.get('identifier');
 
       if (service?.toUpperCase() === 'VIDEO' && name && identifier) {
-        return { service: 'VIDEO', name, identifier };
+        return { type: 'direct', resource: { service: 'VIDEO', name, identifier } };
       }
     }
 
     const pathParts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+
+    if (
+      url.protocol === 'qortal:' &&
+      url.hostname.toUpperCase() === 'APP' &&
+      pathParts[0]?.toLowerCase() === 'q-tube' &&
+      pathParts[1]?.toLowerCase() === 'video'
+    ) {
+      const name = pathParts[2];
+      const identifier = pathParts[3];
+
+      if (name && identifier) {
+        return { type: 'qtube', name, identifier };
+      }
+    }
+
     const arbitraryIndex = pathParts.findIndex((part) => part.toLowerCase() === 'arbitrary');
     const service = pathParts[arbitraryIndex + 1];
     const name = pathParts[arbitraryIndex + 2];
     const identifier = pathParts[arbitraryIndex + 3];
 
     if (arbitraryIndex >= 0 && service?.toUpperCase() === 'VIDEO' && name && identifier) {
-      return { service: 'VIDEO', name, identifier };
+      return { type: 'direct', resource: { service: 'VIDEO', name, identifier } };
     }
   } catch {
     return null;
@@ -53,16 +69,181 @@ const parseQortalVideoLink = (sourceUrl) => {
   return null;
 };
 
-const getVideoResource = (video) => {
+const getVideoSource = (video) => {
   if (video?.qdnVideo?.name && video?.qdnVideo?.identifier) {
     return {
-      service: video.qdnVideo.service || 'VIDEO',
-      name: video.qdnVideo.name,
-      identifier: video.qdnVideo.identifier,
+      type: 'direct',
+      resource: {
+        service: video.qdnVideo.service || 'VIDEO',
+        name: video.qdnVideo.name,
+        identifier: video.qdnVideo.identifier,
+      },
     };
   }
 
   return parseQortalVideoLink(video?.sourceUrl);
+};
+
+const parseFetchedJson = (value) => {
+  if (!value) return null;
+  if (typeof value === 'string') {
+    try {
+      return parseFetchedJson(JSON.parse(value));
+    } catch {
+      return null;
+    }
+  }
+
+  if (typeof value !== 'object') return null;
+  return value;
+};
+
+const normalizeVideoResource = (value, fallbackName) => {
+  if (!value || typeof value !== 'object') return null;
+
+  const service = typeof value.service === 'string' ? value.service.toUpperCase() : '';
+  const name =
+    typeof value.name === 'string' && value.name.trim() ? value.name.trim() : fallbackName;
+  const identifier =
+    typeof value.identifier === 'string' && value.identifier.trim()
+      ? value.identifier.trim()
+      : '';
+
+  if (service === 'VIDEO' && name && identifier) {
+    return { service: 'VIDEO', name, identifier };
+  }
+
+  return null;
+};
+
+const extractVideoResourceFromMetadata = (value, fallbackName, seen = new Set()) => {
+  const parsed = parseFetchedJson(value);
+  if (!parsed || seen.has(parsed)) return null;
+  seen.add(parsed);
+
+  const direct = normalizeVideoResource(parsed, fallbackName);
+  if (direct) return direct;
+
+  for (const key of ['qdnVideo', 'qdn', 'videoResource', 'resource', 'media', 'video', 'data']) {
+    const nested = extractVideoResourceFromMetadata(parsed[key], fallbackName, seen);
+    if (nested) return nested;
+  }
+
+  for (const nestedValue of Object.values(parsed)) {
+    if (!nestedValue || typeof nestedValue !== 'object') continue;
+    const nested = extractVideoResourceFromMetadata(nestedValue, fallbackName, seen);
+    if (nested) return nested;
+  }
+
+  const identifierFields = [
+    'videoIdentifier',
+    'qdnVideoIdentifier',
+    'videoResourceIdentifier',
+    'videoId',
+  ];
+
+  for (const field of identifierFields) {
+    const identifier = typeof parsed[field] === 'string' ? parsed[field].trim() : '';
+    if (identifier && !identifier.endsWith('_metadata')) {
+      return { service: 'VIDEO', name: fallbackName, identifier };
+    }
+  }
+
+  return null;
+};
+
+const uniqueResources = (resources) => {
+  const seen = new Set();
+
+  return resources.filter((resource) => {
+    if (!resource?.name || !resource?.identifier) return false;
+    const key = `${resource.service}:${resource.name}:${resource.identifier}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const findQTubeVideoResources = async ({ name, identifier }) => {
+  const baseIdentifier = identifier.replace(/_metadata$/, '');
+  const prefixes = uniqueResources([
+    { service: 'VIDEO', name, identifier: baseIdentifier },
+    { service: 'VIDEO', name, identifier },
+  ]).map((resource) => resource.identifier);
+  const resources = [];
+
+  for (const prefixIdentifier of prefixes) {
+    try {
+      const result = await requestQortal({
+        action: 'SEARCH_QDN_RESOURCES',
+        service: 'VIDEO',
+        mode: 'ALL',
+        name,
+        identifier: prefixIdentifier,
+        prefix: true,
+        limit: 20,
+        offset: 0,
+        reverse: true,
+        includeMetadata: true,
+        includeStatus: true,
+        excludeBlocked: true,
+        exactMatchNames: true,
+      });
+
+      const matches = Array.isArray(result) ? result : [];
+      resources.push(
+        ...matches.map((match) => ({
+          service: 'VIDEO',
+          name: match.name || name,
+          identifier: match.identifier,
+        })),
+      );
+    } catch {
+      // Search is a best-effort fallback for Q-Tube variants.
+    }
+  }
+
+  return uniqueResources(resources);
+};
+
+const resolveQTubeResources = async ({ name, identifier }) => {
+  const resources = [];
+
+  for (const service of ['DOCUMENT', 'JSON']) {
+    try {
+      const metadata = await requestQortal({
+        action: 'FETCH_QDN_RESOURCE',
+        service,
+        name,
+        identifier,
+      });
+      const resource = extractVideoResourceFromMetadata(metadata, name);
+      if (resource) {
+        resources.push(resource);
+      }
+    } catch {
+      // Q-Tube deployments have used more than one metadata service; try the next one.
+    }
+  }
+
+  if (identifier.endsWith('_metadata')) {
+    resources.push({
+      service: 'VIDEO',
+      name,
+      identifier: identifier.replace(/_metadata$/, ''),
+    });
+  }
+
+  resources.push(...(await findQTubeVideoResources({ name, identifier })));
+
+  return uniqueResources(resources);
+};
+
+const resolveVideoResources = async (videoSource) => {
+  if (!videoSource) return [];
+  if (videoSource.type === 'direct') return [videoSource.resource];
+  if (videoSource.type === 'qtube') return resolveQTubeResources(videoSource);
+  return [];
 };
 
 const isDirectVideoUrl = (sourceUrl) => {
@@ -77,13 +258,13 @@ const isDirectVideoUrl = (sourceUrl) => {
   }
 };
 
-export const useVideoResource = (video) => {
+export const useVideoResource = (video, { enabled = true } = {}) => {
   const [resourceUrl, setResourceUrl] = useState('');
   const [status, setStatus] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const qdnResource = useMemo(() => getVideoResource(video), [video]);
+  const videoSource = useMemo(() => getVideoSource(video), [video]);
   const fallbackSourceUrl = trimString(video?.sourceUrl);
 
   useEffect(() => {
@@ -94,7 +275,14 @@ export const useVideoResource = (video) => {
       setStatus(null);
       setError('');
 
-      if (!qdnResource) {
+      if (!enabled) {
+        setIsLoading(false);
+        return;
+      }
+
+      const qdnResources = await resolveVideoResources(videoSource);
+
+      if (!qdnResources.length) {
         if (isDirectVideoUrl(fallbackSourceUrl)) {
           setResourceUrl(fallbackSourceUrl);
         }
@@ -105,33 +293,37 @@ export const useVideoResource = (video) => {
       setIsLoading(true);
 
       try {
-        const readyStatus = await waitForQdnResourceReady({
-          ...qdnResource,
-          onStatusChange: (nextStatus) => {
-            if (!cancelled) {
-              setStatus(nextStatus);
-            }
-          },
-        });
+        let latestError = '';
 
-        if (cancelled) return;
+        for (const qdnResource of qdnResources) {
+          const readyStatus = await waitForQdnResourceReady({
+            ...qdnResource,
+            onStatusChange: (nextStatus) => {
+              if (!cancelled) {
+                setStatus(nextStatus);
+              }
+            },
+          });
 
-        if (!isQdnResourceReady(readyStatus.status)) {
-          setError(`Video is not ready yet (${readyStatus.status}).`);
-          setIsLoading(false);
-          return;
+          if (cancelled) return;
+
+          if (!isQdnResourceReady(readyStatus.status)) {
+            latestError = `Video is not ready yet (${readyStatus.status}).`;
+            continue;
+          }
+
+          const nextResourceUrl = await getQdnResourceUrl(qdnResource);
+          if (cancelled) return;
+
+          if (nextResourceUrl) {
+            setResourceUrl(nextResourceUrl);
+            return;
+          }
+
+          latestError = 'Video resource URL could not be resolved.';
         }
 
-        const nextResourceUrl = await getQdnResourceUrl(qdnResource);
-        if (cancelled) return;
-
-        if (!nextResourceUrl) {
-          setError('Video resource URL could not be resolved.');
-          setIsLoading(false);
-          return;
-        }
-
-        setResourceUrl(nextResourceUrl);
+        setError(latestError || 'Video resource URL could not be resolved.');
       } catch (err) {
         if (!cancelled) {
           setError(err?.message || 'Video resource could not be loaded.');
@@ -148,14 +340,14 @@ export const useVideoResource = (video) => {
     return () => {
       cancelled = true;
     };
-  }, [fallbackSourceUrl, qdnResource]);
+  }, [enabled, fallbackSourceUrl, videoSource]);
 
   return {
     error,
     isLoading,
     isReady: Boolean(resourceUrl),
     progress: status?.percentLoaded,
-    qdnResource,
+    qdnResource: videoSource?.resource || null,
     resourceUrl,
     status,
   };

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   FaCommentDots,
   FaEdit,
@@ -6,6 +7,7 @@ import {
   FaPlay,
   FaShareAlt,
 } from 'react-icons/fa';
+import { useVideoResource } from '../../hooks/useVideoResource';
 import styles from './VideoCard.module.css';
 
 const truncate = (value = '', max = 300) => {
@@ -35,8 +37,16 @@ function VideoCard({
   onTip,
   video,
 }) {
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const videoResource = useVideoResource(video, { enabled: isPreviewOpen });
+
   const stopCardClick = (event) => {
     event.stopPropagation();
+  };
+
+  const togglePreview = (event) => {
+    stopCardClick(event);
+    setIsPreviewOpen((current) => !current);
   };
 
   const handleKeyDown = (event) => {
@@ -55,12 +65,50 @@ function VideoCard({
       tabIndex={0}
     >
       <div className={styles.thumbnail}>
-        {video.thumbnailUrl ? (
-          <img src={video.thumbnailUrl} alt={video.title || 'Video thumbnail'} />
+        {isPreviewOpen && videoResource.resourceUrl ? (
+          <video
+            aria-label={`${video.title || 'Video'} preview`}
+            className={styles.previewPlayer}
+            autoPlay
+            controls
+            muted
+            playsInline
+            poster={video.thumbnailUrl || undefined}
+            preload="metadata"
+            src={videoResource.resourceUrl}
+            onClick={stopCardClick}
+          />
         ) : (
-          <span className={styles.placeholderIcon}>
-            <FaPlay />
-          </span>
+          <>
+            {video.thumbnailUrl ? (
+              <img src={video.thumbnailUrl} alt={video.title || 'Video thumbnail'} />
+            ) : (
+              <span className={styles.placeholderIcon}>
+                <FaPlay />
+              </span>
+            )}
+            <button
+              type="button"
+              className={styles.previewButton}
+              onClick={togglePreview}
+              aria-label={isPreviewOpen ? 'Close video preview' : 'Play video preview'}
+              title={isPreviewOpen ? 'Close preview' : 'Play preview'}
+            >
+              <FaPlay />
+            </button>
+          </>
+        )}
+        {isPreviewOpen && !videoResource.resourceUrl && (
+          <div className={styles.previewStatus} onClick={stopCardClick}>
+            {videoResource.isLoading ? (
+              <span>
+                Loading preview
+                {videoResource.progress ? ` ${videoResource.progress}%` : '...'}
+              </span>
+            ) : (
+              <span>{videoResource.error || 'Preview is not available yet.'}</span>
+            )}
+          </div>
         )}
       </div>
 
