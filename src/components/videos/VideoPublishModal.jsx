@@ -133,14 +133,14 @@ function VideoPublishModal({
             </label>
           ) : (
             <label>
-              {form.sourceType === 'bridge' ? 'Video bridge HTML embed code' : 'Video link'}
+              {form.sourceType === 'bridge' ? 'Qortal video bridge QDN URI' : 'Video link'}
               <input
                 type="text"
                 value={form.sourceUrl}
                 onChange={(event) => updateField('sourceUrl', event.target.value)}
                 placeholder={
                   form.sourceType === 'bridge'
-                    ? 'Paste the full Qortal Video Bridge HTML embed code'
+                    ? 'Paste qortal://VIDEO/Qortal-Video-Bridge/video-identifier'
                     : 'Paste a Q-Tube video link'
                 }
               />
