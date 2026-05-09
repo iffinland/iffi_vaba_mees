@@ -20,6 +20,7 @@ import {
 } from '../../services/videoEngagementService';
 import {
   fetchVideoByIdentifier,
+  fetchVideoPlaylists,
   getCurrentUserProfile,
   updateVideo,
 } from '../../services/videoService';
@@ -50,6 +51,7 @@ function VideoDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [playlists, setPlaylists] = useState([]);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const commentsRef = useRef(null);
@@ -72,6 +74,18 @@ function VideoDetailPage() {
     };
 
     loadProfile();
+  }, []);
+
+  useEffect(() => {
+    const loadPlaylists = async () => {
+      try {
+        setPlaylists(await fetchVideoPlaylists());
+      } catch (err) {
+        console.warn('Unable to load video playlists', err);
+      }
+    };
+
+    loadPlaylists();
   }, []);
 
   useEffect(() => {
@@ -123,7 +137,6 @@ function VideoDetailPage() {
   }, [video]);
 
   const canEditVideo = profile.name.trim().toLowerCase() === OWNER_QORTAL_NAME;
-  const playlists = video?.playlist ? [video.playlist] : [];
   const videoResource = useVideoResource(video);
 
   const saveVideoEdits = async (form) => {
@@ -141,6 +154,13 @@ function VideoDetailPage() {
         authorName: profile.name,
       });
       setVideo(updatedVideo);
+      if (updatedVideo.playlist) {
+        setPlaylists((current) =>
+          current.includes(updatedVideo.playlist)
+            ? current
+            : [...current, updatedVideo.playlist].sort((a, b) => a.localeCompare(b)),
+        );
+      }
       setIsEditVideoOpen(false);
     } catch (err) {
       setError(err?.message || 'Unable to update video.');
