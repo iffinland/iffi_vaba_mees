@@ -1,24 +1,5 @@
 .footer {
   border-top: 1px solid #eee;
-  padding-top: 2rem;
-  margin-top: 2rem;
+  padding: 2rem 0 0.5rem;
+  margin-top: 2.5rem;
 }
-
-.footerNav {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.footerNav a {
-  text-decoration: none;
-  color: #333;
-}
-
-.footerInfo {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  color: #777;
-}
-

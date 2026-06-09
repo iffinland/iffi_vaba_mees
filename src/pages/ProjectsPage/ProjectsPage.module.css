@@ -24,6 +24,9 @@
 }
 
 .tabButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.8rem 1.5rem;
   font-size: 1rem;
   font-weight: bold;
@@ -32,6 +35,7 @@
   border: none;
   border-radius: 50px; /* Täiesti ümarad ääred */
   cursor: pointer;
+  text-decoration: none;
   /* Anname mõlemale nupule vaikimisi sama tugeva varju nagu teistel elementidel */
   box-shadow: 0px 25px 50px rgba(0, 0, 0, 0.25), 0px 10px 20px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease-in-out;
@@ -41,11 +45,6 @@
   /* Tugevdame varju ja tõstame nuppu veidi */
   transform: translateY(-2px);
   box-shadow: 0px 35px 60px rgba(0, 0, 0, 0.3), 0px 15px 35px rgba(0, 0, 0, 0.25);
-}
-
-.tabButton.active {
-  /* Aktiivne nupp on lihtsalt veidi suurem, et eristuda */
-  transform: scale(1.05);
 }
 
 .tabContent {

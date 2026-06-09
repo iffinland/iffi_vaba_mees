@@ -1,0 +1,112 @@
+.card {
+  min-height: 480px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 22px 45px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.card:focus-visible {
+  outline: 3px solid #ffd54f;
+  outline-offset: 4px;
+}
+
+.cover {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  background: #333;
+  color: #ffe082;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.coverPlaceholder {
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+.status {
+  position: absolute;
+  left: 0.85rem;
+  top: 0.85rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #333;
+  padding: 0.38rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 900;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+}
+
+.active {
+  background: #ffe082;
+}
+
+.paused {
+  background: #efefef;
+}
+
+.released {
+  background: #d6f2df;
+}
+
+.idea {
+  background: #f4e4ff;
+}
+
+.body {
+  padding: 1.15rem;
+  flex: 1;
+}
+
+.body h2 {
+  font-size: 1.35rem;
+  line-height: 1.25;
+  margin: 0;
+  color: #222;
+}
+
+.role {
+  margin: 0.65rem 0 0;
+  color: #555;
+  font-weight: 800;
+}
+
+.body p:not(.role) {
+  margin: 1rem 0 0;
+  color: #333;
+  line-height: 1.55;
+}
+
+.footer {
+  min-height: 54px;
+  padding: 0 1.15rem;
+  border-top: 1px solid #ececec;
+  background: #f7f7f7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.linkHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}

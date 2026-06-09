@@ -17,6 +17,7 @@
 }
 
 .navButton {
+  position: relative;
   border-radius: 50%; /* Ümmargune nupp */
   width: 60px;  /* Muudetud veel 15% väiksemaks */
   height: 60px; /* Muudetud veel 15% väiksemaks */
@@ -35,10 +36,59 @@
   transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 
+.navButton::after {
+  content: attr(aria-label);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.7rem);
+  z-index: 20;
+  transform: translate(-50%, -0.35rem);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: #333;
+  color: #ffe082;
+  padding: 0.42rem 0.7rem;
+  font-size: 0.78rem;
+  line-height: 1;
+  font-weight: 800;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.navButton::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.35rem);
+  z-index: 21;
+  transform: translate(-50%, -0.35rem);
+  opacity: 0;
+  pointer-events: none;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #333;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
 .navButton:hover {
   /* Hiirega üle minnes muudame varju veelgi tugevamaks, et nupp "tõuseks" */
   box-shadow: 0px 35px 60px rgba(0, 0, 0, 0.3), 0px 15px 35px rgba(0, 0, 0, 0.25);
   color: #007bff; /* Muudame ikooni värvi siniseks */
+}
+
+.navButton:hover::after,
+.navButton:hover::before,
+.navButton:focus-visible::after,
+.navButton:focus-visible::before {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.navButton:focus-visible {
+  outline: 3px solid #ffd54f;
+  outline-offset: 5px;
 }
 
 .navButton:active {

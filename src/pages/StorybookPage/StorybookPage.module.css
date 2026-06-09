@@ -1,0 +1,137 @@
+.page {
+  width: 100%;
+  padding: 0 0 1rem;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.hero h1 {
+  font-size: 3rem;
+  margin: 0 0 0.7rem;
+}
+
+.hero p {
+  margin: 0;
+  color: #333;
+  line-height: 1.65;
+  max-width: 780px;
+}
+
+.publishButton {
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #ffe082, #ffd54f);
+  color: #333;
+  padding: 0.85rem 1.3rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.15);
+  flex: 0 0 auto;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.searchBox {
+  width: min(520px, 100%);
+  background: #fff;
+  border-radius: 999px;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 1rem;
+}
+
+.searchBox input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font: inherit;
+  background: transparent;
+}
+
+.bookList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  font-weight: 800;
+}
+
+.pagination button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.65rem 1.25rem;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+.pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.status,
+.error {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+}
+
+.error {
+  color: #b71c1c;
+  background: rgba(183, 28, 28, 0.08);
+}
+
+.toast {
+  position: fixed;
+  top: 1.2rem;
+  right: 1.2rem;
+  z-index: 1100;
+  background: #333;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+}
+
+@media (max-width: 760px) {
+  .hero {
+    flex-direction: column;
+  }
+
+  .hero h1 {
+    font-size: 2.35rem;
+  }
+
+  .publishButton,
+  .searchBox {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+}

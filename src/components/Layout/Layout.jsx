@@ -5,7 +5,11 @@ import collageImage from '../../assets/collage.jpg';
 function Layout({ children }) {
   const location = useLocation();
   const isWidePage =
-    location.pathname.startsWith('/videos') || location.pathname.startsWith('/gallery');
+    location.pathname.startsWith('/videos') ||
+    location.pathname.startsWith('/gallery') ||
+    location.pathname.startsWith('/blog') ||
+    location.pathname.startsWith('/storybook') ||
+    (location.pathname.startsWith('/projects/') && location.pathname !== '/projects');
 
   return (
     <div className={`${styles.container} ${isWidePage ? styles.widePage : ''}`}>
