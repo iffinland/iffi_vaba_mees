@@ -1,6 +1,6 @@
 # Iffi Vaba Mees Project Roadmap
 
-Last updated: 2026-06-08
+Last updated: 2026-06-10
 
 ## Purpose
 
@@ -221,11 +221,15 @@ Open layout ideas:
 - Footer social action state and link definitions live in `useFooterSocialActions`.
 - Current footer actions: Q-Blog, Q-Tube, Q-Music, Q-Mail, and Let's chat.
 - The Let's chat footer action reuses `DirectMessageModal`.
+- Header audience actions are implemented as a standalone `AudienceActions` component above the main navigation.
+- Header audience action state lives in `useAudienceActions`.
+- Current header audience actions: Follow and Subscribe.
+- Follow adds the configured website names to Qortal's `followedNames` list through `ADD_LIST_ITEMS`.
+- Subscribe is intentionally a placeholder for now and only shows a coming-soon notice.
 
 ## Current Verification Baseline
 
-As of 2026-06-08:
+As of 2026-06-10:
 
 - `npm run build` passes.
 - `npm run lint` passes.
-- Git working tree was clean before creating this roadmap file.

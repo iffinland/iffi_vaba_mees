@@ -1,11 +1,9 @@
 import { Link } from 'react-router-dom';
 import styles from './ProjectsPage.module.css';
-import projectsImage from '../../assets/poster-my-projects.webp';
 
 function ProjectsPage() {
   return (
     <div className={styles.container}>
-      <img src={projectsImage} alt="iffi's various projects" className={styles.pageImage} />
       <h1 className={styles.title}>iffi's various projects</h1>
       <h4><strong>This is the projects page. An overview of the projects I am working on or in.</strong></h4>
 

@@ -5,6 +5,7 @@ import { posts } from '../../data/postsData'; // Impordime postituste andmed
 function PostPage() {
   const { postId } = useParams(); // Loeme URL-ist postituse ID
   const post = posts[postId]; // Leiame õige postituse andmebaasist
+  const shouldShowImage = !['who-i-am', 'my-world'].includes(postId);
 
   // Kui postitust ei leita, kuvame veateate
   if (!post) {
@@ -18,7 +19,9 @@ function PostPage() {
 
   return (
     <article className={styles.post}>
-      <img src={post.image} alt={post.title} className={styles.postImage} />
+      {shouldShowImage && (
+        <img src={post.image} alt={post.title} className={styles.postImage} />
+      )}
       <h1 className={styles.postTitle}>{post.title}</h1>
       {/* Kasutame dangerouslySetInnerHTML, et lubada <br> täge tekstis */}
       <div className={styles.postContent} dangerouslySetInnerHTML={{ __html: post.content }} />

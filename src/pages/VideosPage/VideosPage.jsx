@@ -116,9 +116,7 @@ function VideosPage() {
         <div>
           <h1>Videos</h1>
           <p>
-            Browse videos published through my Qortal gallery. Search by title or
-            description, sort the newest or oldest first, and open social actions from
-            each card.
+            Watch videos I've recorded at different moments and in various situations throughout my life.
           </p>
         </div>
         {canPublishVideos && (

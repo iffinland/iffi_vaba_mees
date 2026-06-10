@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { FaEnvelope, FaMusic, FaPenSquare, FaPlay, FaRegComments } from 'react-icons/fa';
+import { OWNER_QMAIL_LINK } from '../utils/siteConfig';
 
 export const useFooterSocialActions = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -41,7 +42,7 @@ export const useFooterSocialActions = () => {
       {
         id: 'q-mail',
         label: 'Q-Mail',
-        href: 'qortal://APP/Q-Mail/to/iffi%20vaba%20mees',
+        href: OWNER_QMAIL_LINK,
         Icon: FaEnvelope,
       },
     ],

@@ -168,8 +168,7 @@ function GuestbookPage() {
         <div>
           <h1 className={styles.title}>Guestbook</h1>
           <p className={styles.intro}>
-            Share a note, a thought, or words of encouragement. Every message becomes part
-            of my QDN hosted story.
+            Feel free to share your thoughts or feelings after visiting my website. Leave a comment.
           </p>
         </div>
         <div className={styles.actions}>

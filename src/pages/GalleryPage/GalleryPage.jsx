@@ -77,7 +77,7 @@ function GalleryPage() {
         <div>
           <h1>Gallery</h1>
           <p>
-            Browse image galleries published to QDN. Each gallery keeps its images,
+            Browse my life on images. Each gallery keeps its images,
             thumbnails, comments, and share links outside the application bundle.
           </p>
         </div>

@@ -1,18 +1,18 @@
-export const requestQortal = async (payload) => {
+const getQortalBridge = () => {
   const qortalBridge =
     (typeof window !== 'undefined' && window.qortalRequest) ||
     (typeof globalThis !== 'undefined' && globalThis.qortalRequest) ||
     null;
 
   if (typeof qortalBridge === 'function') {
-    return qortalBridge(payload);
+    return qortalBridge;
   }
 
   if (typeof window !== 'undefined') {
     try {
       const parent = window.parent;
       if (parent && parent !== window && typeof parent.qortalRequest === 'function') {
-        return parent.qortalRequest(payload);
+        return parent.qortalRequest;
       }
     } catch {
       // Cross-origin parent access can fail; continue with other fallbacks.
@@ -21,7 +21,7 @@ export const requestQortal = async (payload) => {
     try {
       const topWindow = window.top;
       if (topWindow && topWindow !== window && typeof topWindow.qortalRequest === 'function') {
-        return topWindow.qortalRequest(payload);
+        return topWindow.qortalRequest;
       }
     } catch {
       // Cross-origin top access can fail; continue with other fallbacks.
@@ -31,7 +31,19 @@ export const requestQortal = async (payload) => {
   // Qortal UI can expose qortalRequest as an injected global function.
   if (typeof qortalRequest !== 'undefined' && typeof qortalRequest === 'function') {
     // eslint-disable-next-line no-undef
-    return qortalRequest(payload);
+    return qortalRequest;
+  }
+
+  return null;
+};
+
+export const hasQortalBridge = () => typeof getQortalBridge() === 'function';
+
+export const requestQortal = async (payload) => {
+  const qortalBridge = getQortalBridge();
+
+  if (typeof qortalBridge === 'function') {
+    return qortalBridge(payload);
   }
 
   throw new Error('Qortal request API is not available. Open the Qortal UI first.');

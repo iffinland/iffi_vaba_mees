@@ -1,0 +1,180 @@
+.shell {
+  position: relative;
+  width: 100%;
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.actionButton {
+  border: none;
+  border-radius: 999px;
+  padding: 0.38rem 0.95rem 0.38rem 0.48rem;
+  background: #fff;
+  color: #333;
+  text-decoration: none;
+  font: inherit;
+  font-size: 0.96rem;
+  line-height: 1;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.52rem;
+  cursor: pointer;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22), 0 7px 14px rgba(0, 0, 0, 0.16);
+  transition: transform 0.2s ease-in-out, box-shadow 0.24s ease-in-out, color 0.2s ease-in-out;
+}
+
+.actionButton:hover,
+.actionButton:focus-visible {
+  color: #007bff;
+  transform: translateY(-1px);
+  box-shadow: 0 22px 42px rgba(0, 0, 0, 0.26), 0 10px 22px rgba(0, 0, 0, 0.2);
+}
+
+.actionButton:focus-visible {
+  outline: 3px solid #ffd54f;
+  outline-offset: 4px;
+}
+
+.actionButton:active {
+  transform: scale(0.95);
+}
+
+.iconBadge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f7f7f7;
+  color: #333;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  flex: 0 0 auto;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.notice {
+  position: fixed;
+  top: 1.2rem;
+  right: 1.2rem;
+  z-index: 1100;
+  background: #333;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1.4rem;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.followModal {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 540px);
+  padding: 1.65rem;
+  border-radius: 8px;
+  border-top: 5px solid #ffd54f;
+  background: #fff;
+  color: #333;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.28);
+}
+
+.followModal h2,
+.followModal p {
+  margin: 0;
+}
+
+.followModal h2 {
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  line-height: 1.08;
+}
+
+.eyebrow {
+  color: #007bff;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modalClose {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #f3f3f3;
+  color: #333;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.followChoice {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 0.95rem;
+  background: #fff;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+}
+
+.followChoice svg {
+  flex: 0 0 auto;
+  font-size: 1.15rem;
+  color: #007bff;
+}
+
+.followChoice span {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.followChoice small,
+.followNote {
+  color: #686868;
+}
+
+.followChoice:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+@media (max-width: 620px) {
+  .shell {
+    width: 100%;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .actionButton {
+    flex: 1 1 9rem;
+  }
+}
