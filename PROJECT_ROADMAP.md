@@ -223,9 +223,11 @@ Open layout ideas:
 - The Let's chat footer action reuses `DirectMessageModal`.
 - Header audience actions are implemented as a standalone `AudienceActions` component above the main navigation.
 - Header audience action state lives in `useAudienceActions`.
-- Current header audience actions: Follow and Subscribe.
+- Current header audience actions: Follow and Monthly Support.
 - Follow adds the configured website names to Qortal's `followedNames` list through `ADD_LIST_ITEMS`.
-- Subscribe is intentionally a placeholder for now and only shows a coming-soon notice.
+- Monthly Support opens `/support` and uses voluntary QORT support payments without locking content.
+- Monthly Support writes supporter-owned `PRODUCT` records with the `ivm_sup_` identifier prefix.
+- Monthly Support status is checked when the website is visited and shown as a small in-page/header badge instead of using Qortal UI global notifications.
 
 ## Current Verification Baseline
 

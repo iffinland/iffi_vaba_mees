@@ -61,6 +61,26 @@
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
+.statusBadge {
+  border-radius: 999px;
+  padding: 0.42rem 0.75rem;
+  background: rgba(255, 255, 255, 0.86);
+  color: #333;
+  font-size: 0.78rem;
+  line-height: 1;
+  font-weight: 900;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+}
+
+.active {
+  color: #20733b;
+}
+
+.due-soon,
+.ended {
+  color: #8a5a00;
+}
+
 .notice {
   position: fixed;
   top: 1.2rem;
@@ -176,5 +196,11 @@
 
   .actionButton {
     flex: 1 1 9rem;
+  }
+
+  .statusBadge {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
   }
 }

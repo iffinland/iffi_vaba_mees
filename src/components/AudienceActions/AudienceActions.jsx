@@ -1,6 +1,30 @@
-import { FaBell, FaDatabase, FaTimes, FaUserPlus } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { FaDatabase, FaHeart, FaTimes, FaUserPlus } from 'react-icons/fa';
 import { useAudienceActions } from '../../hooks/useAudienceActions';
+import { SUPPORT_ROUTE } from '../../services/monthlySupportService';
 import styles from './AudienceActions.module.css';
+
+const formatDate = (timestamp) => {
+  if (!timestamp) return '';
+  return new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(timestamp));
+};
+
+const getSupportBadge = (supportStatus) => {
+  if (!supportStatus || supportStatus.loading) return '';
+  if (supportStatus.state === 'active') {
+    return `Active until ${formatDate(supportStatus.record?.nextDueAt)}`;
+  }
+  if (supportStatus.state === 'due-soon') {
+    return 'Renewal available soon';
+  }
+  if (supportStatus.state === 'ended') {
+    return 'Support period ended';
+  }
+  return '';
+};
 
 function AudienceActions() {
   const {
@@ -13,8 +37,9 @@ function AudienceActions() {
     isSubmittingFollow,
     notice,
     openFollow,
-    subscribe,
+    supportStatus,
   } = useAudienceActions();
+  const supportBadge = getSupportBadge(supportStatus);
 
   return (
     <div className={styles.shell}>
@@ -28,12 +53,18 @@ function AudienceActions() {
           <span>Follow</span>
         </button>
 
-        <button type="button" className={styles.actionButton} onClick={subscribe}>
+        <Link to={SUPPORT_ROUTE} className={styles.actionButton}>
           <span className={styles.iconBadge}>
-            <FaBell />
+            <FaHeart />
           </span>
-          <span>Subscribe</span>
-        </button>
+          <span>Monthly Support</span>
+        </Link>
+
+        {supportBadge && (
+          <span className={`${styles.statusBadge} ${styles[supportStatus.state]}`}>
+            {supportBadge}
+          </span>
+        )}
       </div>
 
       {isFollowOpen && (

@@ -9,6 +9,7 @@ function Layout({ children }) {
     location.pathname.startsWith('/gallery') ||
     location.pathname.startsWith('/blog') ||
     location.pathname.startsWith('/storybook') ||
+    location.pathname.startsWith('/support') ||
     (location.pathname.startsWith('/projects/') && location.pathname !== '/projects');
 
   return (
