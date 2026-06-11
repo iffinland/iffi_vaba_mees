@@ -6,6 +6,7 @@ import {
   SUPPORT_PRESET_AMOUNTS,
   createMonthlySupportPayment,
 } from '../../services/monthlySupportService';
+import { getQortBalance } from '../../services/videoEngagementService';
 import styles from './MonthlySupportPage.module.css';
 
 const formatDate = (timestamp) => {
@@ -22,7 +23,9 @@ function MonthlySupportPage() {
   const [selectedAmount, setSelectedAmount] = useState(null);
   const [customAmount, setCustomAmount] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBalanceLoading, setIsBalanceLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(null);
   const [paymentError, setPaymentError] = useState('');
   const [completedRecord, setCompletedRecord] = useState(null);
 
@@ -41,11 +44,20 @@ function MonthlySupportPage() {
     return 'No active monthly support record found';
   }, [loading, record?.nextDueAt, state, statusError]);
 
-  const openPaymentModal = (amount) => {
+  const openPaymentModal = async (amount) => {
     setSelectedAmount(amount);
     setPaymentError('');
     setCompletedRecord(null);
+    setWalletBalance(null);
     setIsModalOpen(true);
+    setIsBalanceLoading(true);
+
+    try {
+      const nextBalance = await getQortBalance().catch(() => null);
+      setWalletBalance(typeof nextBalance === 'number' ? nextBalance : null);
+    } finally {
+      setIsBalanceLoading(false);
+    }
   };
 
   const closePaymentModal = () => {
@@ -63,6 +75,11 @@ function MonthlySupportPage() {
     setPaymentError('');
 
     try {
+      if (typeof walletBalance === 'number' && selectedAmount > walletBalance) {
+        setPaymentError('Selected amount is higher than your wallet balance.');
+        return;
+      }
+
       const supportRecord = await createMonthlySupportPayment({ amount: selectedAmount });
       setCompletedRecord(supportRecord);
       await refresh();
@@ -171,13 +188,22 @@ function MonthlySupportPage() {
                   monthly period.
                 </p>
 
+                <div className={styles.infoBox}>
+                  <span>Wallet balance</span>
+                  <strong>
+                    {isBalanceLoading || walletBalance === null
+                      ? 'Loading...'
+                      : `${walletBalance.toFixed(8)} QORT`}
+                  </strong>
+                </div>
+
                 {paymentError && <p className={styles.errorText}>{paymentError}</p>}
 
                 <button
                   type="button"
                   className={styles.confirmButton}
                   onClick={submitPayment}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isBalanceLoading}
                 >
                   {isSubmitting ? 'Processing...' : 'Send support payment'}
                 </button>

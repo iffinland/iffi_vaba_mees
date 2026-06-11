@@ -17,7 +17,7 @@ function Welcome() {
       {notice && <div className={styles.notice}>{notice}</div>}
       <div className={styles.titleContainer}>
         <img src={avatarImage} alt="Avatar" className={styles.avatar} />
-        <h2>Welcome to Iffi's World 🤗</h2>
+        <h2>Welcome to iffi's World 🤗</h2>
       </div>
       <p>
         My life changed completely on December 15, 2021. Until then, I was just an ordinary CITIZEN —going to work, living in a rented apartment, and following the usual routines of everyday life...
