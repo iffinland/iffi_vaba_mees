@@ -47,6 +47,31 @@
   transform: scale(0.95);
 }
 
+.supportStateButton.active {
+  color: #20733b;
+}
+
+.supportStateButton.active .iconBadge {
+  background: rgba(40, 138, 69, 0.12);
+  color: #288a45;
+}
+
+.supportStateButton.due-soon,
+.supportStateButton.ended {
+  color: #5c5547;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.supportStateButton.due-soon .iconBadge,
+.supportStateButton.ended .iconBadge {
+  background: rgba(255, 224, 130, 0.36);
+  color: #8a5a00;
+}
+
+.supportStateButton.ended span:last-child {
+  color: #5c5547;
+}
+
 .iconBadge {
   width: 24px;
   height: 24px;

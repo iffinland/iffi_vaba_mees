@@ -26,6 +26,20 @@ const getSupportBadge = (supportStatus) => {
   return '';
 };
 
+const getSupportButtonText = (supportStatus) => {
+  if (!supportStatus || supportStatus.loading) return 'Monthly Support';
+  if (supportStatus.state === 'active') {
+    return `Active until ${formatDate(supportStatus.record?.nextDueAt)}`;
+  }
+  if (supportStatus.state === 'due-soon') {
+    return 'Renewal available soon';
+  }
+  if (supportStatus.state === 'ended') {
+    return 'Renew support?';
+  }
+  return 'Monthly Support';
+};
+
 function AudienceActions() {
   const {
     canFollow,
@@ -40,6 +54,8 @@ function AudienceActions() {
     supportStatus,
   } = useAudienceActions();
   const supportBadge = getSupportBadge(supportStatus);
+  const supportButtonText = getSupportButtonText(supportStatus);
+  const hasSupportState = ['active', 'due-soon', 'ended'].includes(supportStatus.state);
 
   return (
     <div className={styles.shell}>
@@ -53,14 +69,18 @@ function AudienceActions() {
           <span>Follow</span>
         </button>
 
-        <Link to={SUPPORT_ROUTE} className={styles.actionButton}>
+        <Link
+          to={SUPPORT_ROUTE}
+          className={`${styles.actionButton} ${hasSupportState ? styles.supportStateButton : ''} ${styles[supportStatus.state] || ''}`}
+          aria-label={supportButtonText}
+        >
           <span className={styles.iconBadge}>
             <FaHeart />
           </span>
-          <span>Monthly Support</span>
+          <span>{supportButtonText}</span>
         </Link>
 
-        {supportBadge && (
+        {supportBadge && supportStatus.state !== 'active' && (
           <span className={`${styles.statusBadge} ${styles[supportStatus.state]}`}>
             {supportBadge}
           </span>
