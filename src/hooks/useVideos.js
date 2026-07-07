@@ -65,7 +65,7 @@ export const useVideos = () => {
         const nextProfile = await getCurrentUserProfile();
         setProfile(nextProfile);
       } catch (err) {
-        console.warn('Unable to load Qortal profile', err);
+        console.warn('Unable to load Qortium profile', err);
       }
     };
 
@@ -99,7 +99,7 @@ export const useVideos = () => {
   const publishNewVideo = useCallback(
     async (form) => {
       if (!profile.name || !profile.address) {
-        throw new Error('A Qortal account with a registered name is required.');
+        throw new Error('A Qortium account with a registered name is required.');
       }
 
       setIsPublishing(true);
@@ -128,7 +128,7 @@ export const useVideos = () => {
   const likeVideo = useCallback(
     async (video) => {
       if (!profile.name || !profile.address) {
-        throw new Error('A Qortal account with a registered name is required.');
+        throw new Error('A Qortium account with a registered name is required.');
       }
 
       await publishVideoLike({
@@ -149,7 +149,7 @@ export const useVideos = () => {
   const saveVideoDescription = useCallback(
     async ({ video, descriptionHtml }) => {
       if (!profile.name || !profile.address) {
-        throw new Error('A Qortal account with a registered name is required.');
+        throw new Error('A Qortium account with a registered name is required.');
       }
 
       setIsUpdatingVideo(true);

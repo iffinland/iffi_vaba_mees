@@ -100,10 +100,10 @@ function AudienceActions() {
               <FaTimes />
             </button>
 
-            <p className={styles.eyebrow}>Qortal hosting support</p>
+            <p className={styles.eyebrow}>Qortium hosting support</p>
             <h2 id="follow-title">Follow iffi vaba mees</h2>
             <p>
-              Following helps your local Qortal node mirror my published resources and makes this
+              Following helps your local Qortium node mirror my published resources and makes this
               website easier for peers to retrieve.
             </p>
 
@@ -116,13 +116,13 @@ function AudienceActions() {
               <FaDatabase />
               <span>
                 <strong>Follow Website</strong>
-                <small>{followNames.length > 0 ? followNames.join(', ') : 'No Qortal names found.'}</small>
+                <small>{followNames.length > 0 ? followNames.join(', ') : 'No Qortium names found.'}</small>
               </span>
             </button>
 
             {!canFollow && (
               <p className={styles.followNote}>
-                Open this website inside Qortal UI to enable follow controls.
+                Open this website inside Qortium Home to enable follow controls.
               </p>
             )}
             {followMessage && (

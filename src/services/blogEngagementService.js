@@ -1,9 +1,9 @@
 import {
   createShortId,
   encodeObjectToBase64,
-  requestQortal,
+  requestQortium,
   sanitizeIdentifierSegment,
-} from '../utils/qortalClient';
+} from './qortium/qortiumClient';
 
 const COMMENT_PREFIX = 'ivm_bc_';
 const LIKE_PREFIX = 'ivm_bl_';
@@ -27,7 +27,7 @@ export const fetchBlogComments = async (postId, limit = 50) => {
   let offset = 0;
 
   while (comments.length < limit) {
-    const page = await requestQortal({
+    const page = await requestQortium({
       action: 'SEARCH_QDN_RESOURCES',
       service: 'DOCUMENT',
       mode: 'ALL',
@@ -46,7 +46,7 @@ export const fetchBlogComments = async (postId, limit = 50) => {
     const resolved = await Promise.all(
       summaries.map(async (summary) => {
         try {
-          const payload = await requestQortal({
+          const payload = await requestQortium({
             action: 'FETCH_QDN_RESOURCE',
             service: 'DOCUMENT',
             name: summary.name,
@@ -108,7 +108,7 @@ export const publishBlogComment = async ({
     updated: timestamp,
   };
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: 'DOCUMENT',
@@ -139,7 +139,7 @@ export const updateBlogComment = async ({
     updated: Date.now(),
   };
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: 'DOCUMENT',
@@ -154,7 +154,7 @@ export const updateBlogComment = async ({
 };
 
 export const fetchBlogLikeCount = async (postId) => {
-  const page = await requestQortal({
+  const page = await requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: 'DOCUMENT',
     mode: 'ALL',
@@ -181,7 +181,7 @@ export const publishBlogLike = async ({ postId, postTitle, authorName, authorAdd
     created: Date.now(),
   };
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: 'DOCUMENT',

@@ -8,7 +8,7 @@ import {
   updateLifeStoryEntry,
 } from '../../services/lifeStoryService';
 import { sanitizeHtml } from '../../utils/htmlSanitizer';
-import { isOwnerName } from '../../utils/siteConfig';
+import { isOwnerProfile } from '../../utils/siteConfig';
 import styles from './StoryEntryDetailPage.module.css';
 
 function StoryEntryDetailPage() {
@@ -31,7 +31,7 @@ function StoryEntryDetailPage() {
       try {
         setProfile(await getCurrentUserProfile());
       } catch (err) {
-        console.warn('Unable to load Qortal profile', err);
+        console.warn('Unable to load Qortium profile', err);
       }
     };
 
@@ -56,7 +56,7 @@ function StoryEntryDetailPage() {
     loadEntry();
   }, [entryId]);
 
-  const canEditEntry = isOwnerName(profile.name);
+  const canEditEntry = isOwnerProfile(profile);
   const sanitizedContent = useMemo(() => sanitizeHtml(entry?.contentHtml || ''), [entry]);
 
   const saveEntryEdits = async (form) => {
@@ -72,6 +72,7 @@ function StoryEntryDetailPage() {
         entry,
         form,
         authorName: profile.name,
+        authorAddress: profile.address,
       });
       setEntry(updatedEntry);
       setIsEditOpen(false);

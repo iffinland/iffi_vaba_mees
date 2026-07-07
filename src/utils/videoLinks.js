@@ -1,12 +1,7 @@
 const directVideoExtensionPattern = /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i;
-const qTubeLinkPattern = /qortal:\/\/APP\/Q-Tube\/video\/([^"'<>\s]+)\/([^"'<>\s]+)/i;
-const qdnVideoLinkPattern = /qortal:\/\/VIDEO\/([^"'<>\s]+)\/([^"'<>\s]+)/i;
+const qdnVideoLinkPattern = /qdn:\/\/VIDEO\/([^"'<>\s]+)\/([^"'<>\s]+)/i;
 
 const trimString = (value) => (typeof value === 'string' ? value.trim() : '');
-const APP_QORTAL_NAME = 'iffi vaba mees';
-
-const encodeQortalComponent = (value) => encodeURIComponent(value);
-
 const decodePathPart = (value) => {
   try {
     return decodeURIComponent(value);
@@ -23,15 +18,11 @@ const extractEmbeddedSource = (value) => {
   const matches = Array.from(input.matchAll(attributePattern)).map((match) => match[1]);
   const preferred = matches.find((match) =>
     /^\/arbitrary\/VIDEO\//i.test(match) ||
-    /^qortal:\/\/APP\/Q-Tube\/video\//i.test(match) ||
-    /^qortal:\/\/VIDEO\//i.test(match) ||
+    /^qdn:\/\/VIDEO\//i.test(match) ||
     directVideoExtensionPattern.test(match),
   );
 
   if (preferred) return preferred;
-
-  const qTubeMatch = input.match(qTubeLinkPattern);
-  if (qTubeMatch) return qTubeMatch[0];
 
   const qdnVideoMatch = input.match(qdnVideoLinkPattern);
   if (qdnVideoMatch) return qdnVideoMatch[0];
@@ -55,9 +46,7 @@ const toUrl = (value) => {
   }
 };
 
-export const buildVideoPageLink = (video) => {
-  return `qortal://APP/${encodeQortalComponent(APP_QORTAL_NAME)}#/videos/${encodeQortalComponent(video.identifier)}`;
-};
+export const buildVideoPageLink = () => '';
 
 export const copyTextToClipboard = async (text) => {
   if (!text) {
@@ -69,7 +58,7 @@ export const copyTextToClipboard = async (text) => {
       await navigator.clipboard.writeText(text);
       return true;
     } catch {
-      // Fall through to the legacy copy path used in Qortal iframe contexts.
+      // Fall through to the legacy copy path used in embedded app contexts.
     }
   }
 
@@ -107,15 +96,6 @@ export const getVideoQdnResource = (video) => {
   const source = extractEmbeddedSource(video?.sourceUrl);
   if (!source) return null;
 
-  const rawQTubeMatch = source.match(qTubeLinkPattern);
-  if (rawQTubeMatch) {
-    const name = decodePathPart(rawQTubeMatch[1]);
-    const identifier = decodePathPart(rawQTubeMatch[2]).replace(/_metadata$/, '');
-    if (name && identifier) {
-      return { service: 'VIDEO', name, identifier, filename: '' };
-    }
-  }
-
   const rawQdnVideoMatch = source.match(qdnVideoLinkPattern);
   if (rawQdnVideoMatch) {
     const name = decodePathPart(rawQdnVideoMatch[1]);
@@ -141,20 +121,4 @@ export const getVideoQdnResource = (video) => {
   return null;
 };
 
-export const buildVideoChatEmbedLink = (video) => {
-  const resource = getVideoQdnResource(video);
-  if (!resource) return '';
-
-  const fileName = resource.filename || `${resource.identifier}.mp4`;
-  const searchParams = [
-    ['name', resource.name],
-    ['identifier', resource.identifier],
-    ['service', resource.service],
-    ['mimeType', 'video/mp4'],
-    ['fileName', fileName],
-  ]
-    .map(([key, value]) => `${key}=${encodeQortalComponent(value)}`)
-    .join('&');
-
-  return `qortal://use-embed/VIDEO?${searchParams}`;
-};
+export const buildVideoChatEmbedLink = () => '';

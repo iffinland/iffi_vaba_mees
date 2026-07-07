@@ -38,8 +38,8 @@ function MonthlySupportPage() {
     if (state === 'active') return `Active until ${formatDate(record?.nextDueAt)}`;
     if (state === 'due-soon') return `Renewal available soon, active until ${formatDate(record?.nextDueAt)}`;
     if (state === 'ended') return 'Monthly support period has ended';
-    if (state === 'needs-name') return 'A Qortal name is required to track monthly support';
-    if (state === 'unavailable') return 'Open inside Qortal UI to view your support status';
+    if (state === 'needs-name') return 'A Qortium name is required to track monthly support';
+    if (state === 'unavailable') return 'Open inside Qortium Home to view your support status';
     if (state === 'error') return statusError || 'Unable to check support status';
     return 'No active monthly support record found';
   }, [loading, record?.nextDueAt, state, statusError]);
@@ -144,7 +144,7 @@ function MonthlySupportPage() {
       </div>
 
       <div className={styles.note}>
-        <strong>How it works:</strong> your Qortal wallet sends the selected QORT amount once, then
+        <strong>How it works:</strong> your Qortium wallet sends the selected QORT amount once, then
         this website stores a support record so it can show your monthly support status on future
         visits.
       </div>

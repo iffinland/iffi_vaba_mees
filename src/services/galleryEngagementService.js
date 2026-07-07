@@ -1,9 +1,9 @@
 import {
   createShortId,
   encodeObjectToBase64,
-  requestQortal,
+  requestQortium,
   sanitizeIdentifierSegment,
-} from '../utils/qortalClient';
+} from './qortium/qortiumClient';
 import { getQortBalance, resolveNameAddress, sendQortTip } from './videoEngagementService';
 
 export { getQortBalance, resolveNameAddress, sendQortTip };
@@ -30,7 +30,7 @@ export const fetchGalleryComments = async (entityId, limit = 50) => {
   let offset = 0;
 
   while (comments.length < limit) {
-    const page = await requestQortal({
+    const page = await requestQortium({
       action: 'SEARCH_QDN_RESOURCES',
       service: 'DOCUMENT',
       mode: 'ALL',
@@ -49,7 +49,7 @@ export const fetchGalleryComments = async (entityId, limit = 50) => {
     const resolved = await Promise.all(
       summaries.map(async (summary) => {
         try {
-          const payload = await requestQortal({
+          const payload = await requestQortium({
             action: 'FETCH_QDN_RESOURCE',
             service: 'DOCUMENT',
             name: summary.name,
@@ -111,7 +111,7 @@ export const publishGalleryComment = async ({
     updated: timestamp,
   };
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: 'DOCUMENT',
@@ -142,7 +142,7 @@ export const updateGalleryComment = async ({
     updated: Date.now(),
   };
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: 'DOCUMENT',
@@ -157,7 +157,7 @@ export const updateGalleryComment = async ({
 };
 
 export const fetchGalleryLikeCount = async (entityId) => {
-  const page = await requestQortal({
+  const page = await requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: 'DOCUMENT',
     mode: 'ALL',
@@ -189,7 +189,7 @@ export const publishGalleryLike = async ({
     created: Date.now(),
   };
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: 'DOCUMENT',

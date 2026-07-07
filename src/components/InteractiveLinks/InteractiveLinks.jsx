@@ -13,7 +13,7 @@ function InteractiveLinks() {
   const links = [
     { id: 'who-i-am', path: '/post/who-i-am', title: 'Who I Am - why I voluntarily came to live in the forest', text: 'I will briefly write a little about myself here, why I live in the forest voluntarily and who I am...', icon: iconWhoIAm },
     { id: 'my-world', path: '/post/my-world', title: 'what kind of world I am creating for myself or where I want to live', text: 'For the moment i have already taken a small step towards my desired worlg', icon: iconMyWorld },
-    { id: 'projects', path: '/projects', title: 'all my projects on Qortal and life', text: 'An overview of the projects I m working on - the list is not complete, I ve highlighted the most important ones for me', icon: iconProject },
+    { id: 'projects', path: '/projects', title: 'all my projects on Qortium and life', text: 'An overview of the projects I m working on - the list is not complete, I ve highlighted the most important ones for me', icon: iconProject },
     { id: 'storybook', path: '/storybook', title: 'my life storybook', text: 'Chronological chapters from my life journey, arranged by the time period they describe.', icon: iconStorybook }
   ];
 

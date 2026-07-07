@@ -27,3 +27,10 @@ dist-ssr
 *.mp4
 *.mov
 *.avi
+
+# Archive artefacts
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z

@@ -1,6 +1,7 @@
-import { requestQortal } from '../utils/qortalClient';
+import { requestQortium } from './qortium/qortiumClient';
+import { OWNER_QORTIUM_ADDRESS } from '../utils/siteConfig';
 
-const OWNER_CHAT_ADDRESS = 'QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q';
+const OWNER_CHAT_ADDRESS = OWNER_QORTIUM_ADDRESS;
 
 const buildChatContent = (message) => ({
   messageText: {
@@ -26,7 +27,7 @@ export const sendOwnerDirectMessage = async (message) => {
     throw new Error('Write a message before sending.');
   }
 
-  return requestQortal({
+  return requestQortium({
     action: 'SEND_CHAT_MESSAGE',
     recipient: OWNER_CHAT_ADDRESS,
     fullContent: buildChatContent(trimmedMessage),

@@ -190,7 +190,10 @@ function GalleryPublishModal({
               type="file"
               accept="image/*"
               multiple
-              onChange={(event) => addImages(event.target.files || [])}
+              onChange={(event) => {
+                addImages(event.target.files || []);
+                event.target.value = '';
+              }}
             />
             <span className={styles.fieldHint}>
               Select up to 10 new images per publish action. Existing images can be reordered below.

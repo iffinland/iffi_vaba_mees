@@ -33,7 +33,7 @@ const isSafeUrl = (value) => {
   return (
     normalized.startsWith('http://') ||
     normalized.startsWith('https://') ||
-    normalized.startsWith('qortal://') ||
+    normalized.startsWith('qdn://') ||
     normalized.startsWith('mailto:')
   );
 };

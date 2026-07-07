@@ -11,7 +11,7 @@ function FooterSocialBar() {
     <div className={styles.shell}>
       {notice && <div className={styles.notice}>{notice}</div>}
 
-      <nav className={styles.socialNav} aria-label="Qortal social links">
+      <nav className={styles.socialNav} aria-label="Qortium social actions">
         {links.map((item) => {
           const LinkIcon = item.Icon;
 

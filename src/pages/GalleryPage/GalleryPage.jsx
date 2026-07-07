@@ -8,9 +8,8 @@ import VideoTipModal from '../../components/videos/VideoTipModal';
 import { useGalleries } from '../../hooks/useGalleries';
 import { useGalleryComments } from '../../hooks/useGalleryComments';
 import { useQortTip } from '../../hooks/useQortTip';
+import { isOwnerProfile } from '../../utils/siteConfig';
 import styles from './GalleryPage.module.css';
-
-const OWNER_QORTAL_NAME = 'iffi vaba mees';
 
 function GalleryPage() {
   const navigate = useNavigate();
@@ -39,7 +38,7 @@ function GalleryPage() {
 
   const comments = useGalleryComments({ profile, notify });
   const tip = useQortTip({ notify });
-  const canPublishGalleries = profile.name.trim().toLowerCase() === OWNER_QORTAL_NAME;
+  const canPublishGalleries = isOwnerProfile(profile);
 
   const openGalleryDetail = (gallery) => {
     navigate(`/gallery/${encodeURIComponent(gallery.identifier)}`);
@@ -56,7 +55,7 @@ function GalleryPage() {
       await navigator.clipboard.writeText(route);
       notify('Gallery link copied.');
     } catch {
-      notify('Unable to copy link.');
+      notify('Sharing is temporarily disabled until Qortium Home confirms the supported app deep-link format.');
     }
   };
 

@@ -24,9 +24,8 @@ import {
   fetchGalleryLikeCount,
   publishGalleryLike,
 } from '../../services/galleryEngagementService';
+import { isOwnerProfile } from '../../utils/siteConfig';
 import styles from './GalleryDetailPage.module.css';
-
-const OWNER_QORTAL_NAME = 'iffi vaba mees';
 
 function GalleryDetailPage() {
   const { galleryId } = useParams();
@@ -57,7 +56,7 @@ function GalleryDetailPage() {
       try {
         setProfile(await getCurrentUserProfile());
       } catch (err) {
-        console.warn('Unable to load Qortal profile', err);
+        console.warn('Unable to load Qortium profile', err);
       }
     };
 
@@ -89,7 +88,7 @@ function GalleryDetailPage() {
     setActiveIndex(imageIndex >= 0 ? imageIndex : 0);
   }, [gallery, searchParams]);
 
-  const canEditGallery = profile.name.trim().toLowerCase() === OWNER_QORTAL_NAME;
+  const canEditGallery = isOwnerProfile(profile);
   const activeImage = gallery?.images[activeIndex] || null;
   const activeEntity = useMemo(() => {
     if (!gallery || !activeImage) return null;
@@ -156,7 +155,7 @@ function GalleryDetailPage() {
       await navigator.clipboard.writeText(route);
       notify('Image link copied.');
     } catch {
-      notify('Unable to copy link.');
+      notify('Sharing is temporarily disabled until Qortium Home confirms the supported app deep-link format.');
     }
   };
 
@@ -167,7 +166,7 @@ function GalleryDetailPage() {
   const handleLikeImage = async () => {
     if (!activeEntity) return;
     if (!profile.name || !profile.address) {
-      notify('A Qortal account with a registered name is required.');
+      notify('A Qortium account with a registered name is required.');
       return;
     }
 
@@ -201,6 +200,7 @@ function GalleryDetailPage() {
         gallery,
         form,
         authorName: profile.name,
+        authorAddress: profile.address,
       });
       setGallery(updated);
       setActiveIndex(0);

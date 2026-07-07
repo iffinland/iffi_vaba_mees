@@ -13,7 +13,7 @@ import {
 } from '../../services/blogService';
 import { fetchBlogLikeCount, publishBlogLike } from '../../services/blogEngagementService';
 import { sanitizeHtml } from '../../utils/htmlSanitizer';
-import { isOwnerName } from '../../utils/siteConfig';
+import { isOwnerProfile } from '../../utils/siteConfig';
 import { copyTextToClipboard } from '../../utils/videoLinks';
 import styles from './BlogDetailPage.module.css';
 
@@ -54,7 +54,7 @@ function BlogDetailPage() {
       try {
         setProfile(await getCurrentUserProfile());
       } catch (err) {
-        console.warn('Unable to load Qortal profile', err);
+        console.warn('Unable to load Qortium profile', err);
       }
     };
 
@@ -121,7 +121,7 @@ function BlogDetailPage() {
     };
   }, [post]);
 
-  const canEditPost = isOwnerName(profile.name);
+  const canEditPost = isOwnerProfile(profile);
   const sanitizedContent = useMemo(() => sanitizeHtml(post?.contentHtml || ''), [post]);
 
   const savePostEdits = async (form) => {
@@ -137,6 +137,7 @@ function BlogDetailPage() {
         post,
         form,
         authorName: profile.name,
+        authorAddress: profile.address,
       });
       setPost(updatedPost);
       if (updatedPost.category) {
@@ -160,7 +161,7 @@ function BlogDetailPage() {
   const handleLike = async () => {
     if (!post) return;
     if (!profile.name || !profile.address) {
-      notify('A Qortal account with a registered name is required.');
+      notify('A Qortium account with a registered name is required.');
       return;
     }
 
@@ -189,7 +190,7 @@ function BlogDetailPage() {
       await copyTextToClipboard(buildBlogPageLink(post));
       notify('Blog post link copied.');
     } catch {
-      notify('Unable to copy link.');
+      notify('Sharing is temporarily disabled until Qortium Home confirms the supported app deep-link format.');
     }
   };
 

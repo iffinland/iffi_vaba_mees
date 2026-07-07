@@ -8,7 +8,7 @@ import {
   updateProject,
 } from '../../services/projectService';
 import { sanitizeHtml } from '../../utils/htmlSanitizer';
-import { isOwnerName } from '../../utils/siteConfig';
+import { isOwnerProfile } from '../../utils/siteConfig';
 import styles from './ProjectDetailPage.module.css';
 
 const statusLabels = {
@@ -54,7 +54,7 @@ function ProjectDetailPage() {
       try {
         setProfile(await getCurrentUserProfile());
       } catch (err) {
-        console.warn('Unable to load Qortal profile', err);
+        console.warn('Unable to load Qortium profile', err);
       }
     };
 
@@ -79,7 +79,7 @@ function ProjectDetailPage() {
     loadProject();
   }, [projectId]);
 
-  const canEditProject = isOwnerName(profile.name);
+  const canEditProject = isOwnerProfile(profile);
   const sanitizedDescription = useMemo(
     () => sanitizeHtml(project?.descriptionHtml || ''),
     [project],
@@ -98,6 +98,7 @@ function ProjectDetailPage() {
         project,
         form,
         authorName: profile.name,
+        authorAddress: profile.address,
       });
       setProject(updatedProject);
       setIsEditOpen(false);

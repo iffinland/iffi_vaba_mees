@@ -29,9 +29,8 @@ import {
   buildVideoPageLink,
   copyTextToClipboard,
 } from '../../utils/videoLinks';
+import { isOwnerProfile } from '../../utils/siteConfig';
 import styles from './VideoDetailPage.module.css';
-
-const OWNER_QORTAL_NAME = 'iffi vaba mees';
 
 const formatDate = (value) => {
   if (!value) return 'No date selected';
@@ -69,7 +68,7 @@ function VideoDetailPage() {
       try {
         setProfile(await getCurrentUserProfile());
       } catch (err) {
-        console.warn('Unable to load Qortal profile', err);
+        console.warn('Unable to load Qortium profile', err);
       }
     };
 
@@ -136,7 +135,7 @@ function VideoDetailPage() {
     };
   }, [video]);
 
-  const canEditVideo = profile.name.trim().toLowerCase() === OWNER_QORTAL_NAME;
+  const canEditVideo = isOwnerProfile(profile);
   const videoResource = useVideoResource(video);
 
   const saveVideoEdits = async (form) => {
@@ -152,6 +151,7 @@ function VideoDetailPage() {
         video,
         form,
         authorName: profile.name,
+        authorAddress: profile.address,
       });
       setVideo(updatedVideo);
       if (updatedVideo.playlist) {
@@ -173,7 +173,7 @@ function VideoDetailPage() {
   const handleLike = async () => {
     if (!video) return;
     if (!profile.name || !profile.address) {
-      notify('A Qortal account with a registered name is required.');
+      notify('A Qortium account with a registered name is required.');
       return;
     }
 
@@ -200,7 +200,7 @@ function VideoDetailPage() {
       await copyTextToClipboard(buildVideoPageLink(video));
       notify('Video link copied.');
     } catch {
-      notify('Unable to copy link.');
+      notify('Sharing is temporarily disabled until Qortium Home confirms the supported app deep-link format.');
     }
   };
 
@@ -208,7 +208,7 @@ function VideoDetailPage() {
     const chatLink = buildVideoChatEmbedLink(video);
 
     if (!chatLink) {
-      notify('Chat embed link is unavailable for this video.');
+      notify('Sharing is temporarily disabled until Qortium Home confirms the supported app deep-link format.');
       return;
     }
 
@@ -216,7 +216,7 @@ function VideoDetailPage() {
       await copyTextToClipboard(chatLink);
       notify('Chat embed link copied.');
     } catch {
-      notify('Unable to copy chat embed link.');
+      notify('Sharing is temporarily disabled until Qortium Home confirms the supported app deep-link format.');
     }
   };
 

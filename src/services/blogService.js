@@ -1,10 +1,10 @@
 import {
   createShortId,
   encodeObjectToBase64,
-  requestQortal,
+  requestQortium,
   sanitizeIdentifierSegment,
-} from '../utils/qortalClient';
-import { APP_QORTAL_NAME, isOwnerName, OWNER_QORTAL_NAME } from '../utils/siteConfig';
+} from './qortium/qortiumClient';
+import { isOwnerName, isOwnerProfile, OWNER_QORTIUM_NAME } from '../utils/siteConfig';
 import { getQdnResourceUrl } from './qdnResourceService';
 import { getCurrentUserProfile } from './videoService';
 
@@ -154,8 +154,10 @@ export const sanitizeBlogPayload = (payload = {}, summary = {}) => {
     return null;
   }
 
-  const resourceOwner = typeof summary.name === 'string' ? summary.name : payload.authorName;
-  if (!isOwnerName(resourceOwner)) {
+  const resourceOwnerName = typeof summary.name === 'string' ? summary.name : payload.authorName;
+  const resourceOwnerAddress =
+    typeof summary.address === 'string' ? summary.address : payload.authorAddress;
+  if (!isOwnerProfile({ name: resourceOwnerName, address: resourceOwnerAddress })) {
     return null;
   }
 
@@ -181,7 +183,7 @@ export const sanitizeBlogPayload = (payload = {}, summary = {}) => {
     publishedDate: normalizeDate(payload.publishedDate) || normalizeDate(created),
     coverResource: payload.coverResource || null,
     coverUrl: typeof payload.coverUrl === 'string' ? payload.coverUrl : '',
-    authorName: OWNER_QORTAL_NAME,
+    authorName: OWNER_QORTIUM_NAME,
     authorAddress: typeof payload.authorAddress === 'string' ? payload.authorAddress : '',
     created,
     updated: Number(payload.updated ?? summary.updated ?? created),
@@ -189,7 +191,7 @@ export const sanitizeBlogPayload = (payload = {}, summary = {}) => {
 };
 
 const fetchSummaries = async ({ limit, offset, sortOrder }) =>
-  requestQortal({
+  requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: BLOG_SERVICE,
     mode: 'ALL',
@@ -207,7 +209,7 @@ const fetchSummaries = async ({ limit, offset, sortOrder }) =>
 const fetchBlogPostFromSummary = async (summary) => {
   if (!isOwnerName(summary?.name)) return null;
 
-  const resource = await requestQortal({
+  const resource = await requestQortium({
     action: 'FETCH_QDN_RESOURCE',
     service: BLOG_SERVICE,
     name: summary.name,
@@ -226,7 +228,7 @@ const fetchBlogPostFromSummary = async (summary) => {
 };
 
 export const fetchBlogByIdentifier = async (identifier) => {
-  const summaries = await requestQortal({
+  const summaries = await requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: BLOG_SERVICE,
     mode: 'ALL',
@@ -386,7 +388,7 @@ const publishCover = async ({ file, identifier, authorName, title }) => {
   }
 
   const data64 = await renderCoverBase64(file);
-  const response = await requestQortal({
+  const response = await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: COVER_SERVICE,
@@ -411,7 +413,7 @@ const publishCover = async ({ file, identifier, authorName, title }) => {
 };
 
 export const publishBlogPost = async ({ form, authorName, authorAddress }) => {
-  if (!isOwnerName(authorName)) {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
     throw new Error('Only the site owner can publish blog posts.');
   }
 
@@ -442,10 +444,14 @@ export const publishBlogPost = async ({ form, authorName, authorAddress }) => {
       created: now,
       updated: now,
     },
-    { name: authorName, identifier, created: now, updated: now },
+    { name: authorName, address: authorAddress, identifier, created: now, updated: now },
   );
 
-  await requestQortal({
+  if (!payload) {
+    throw new Error('Unable to prepare blog post payload for publishing.');
+  }
+
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: BLOG_SERVICE,
@@ -459,8 +465,8 @@ export const publishBlogPost = async ({ form, authorName, authorAddress }) => {
   return payload;
 };
 
-export const updateBlogPost = async ({ post, form, authorName }) => {
-  if (!isOwnerName(authorName)) {
+export const updateBlogPost = async ({ post, form, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
     throw new Error('Only the site owner can edit blog posts.');
   }
 
@@ -492,10 +498,14 @@ export const updateBlogPost = async ({ post, form, authorName }) => {
       coverUrl,
       updated: Date.now(),
     },
-    { name: authorName, identifier: post.identifier },
+    { name: authorName, address: authorAddress, identifier: post.identifier },
   );
 
-  await requestQortal({
+  if (!updatedPost) {
+    throw new Error('Unable to prepare blog post payload for publishing.');
+  }
+
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: BLOG_SERVICE,
@@ -509,5 +519,4 @@ export const updateBlogPost = async ({ post, form, authorName }) => {
   return updatedPost;
 };
 
-export const buildBlogPageLink = (post) =>
-  `qortal://APP/${encodeURIComponent(APP_QORTAL_NAME)}#/blog/${encodeURIComponent(post.identifier)}`;
+export const buildBlogPageLink = () => '';

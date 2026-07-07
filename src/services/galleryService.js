@@ -1,9 +1,10 @@
 import {
   createShortId,
   encodeObjectToBase64,
-  requestQortal,
+  fileToBase64,
+  requestQortium,
   sanitizeIdentifierSegment,
-} from '../utils/qortalClient';
+} from './qortium/qortiumClient';
 import { getQdnResourceUrl } from './qdnResourceService';
 import { getCurrentUserProfile } from './videoService';
 
@@ -165,7 +166,7 @@ const publishThumbnail = async ({ file, identifier, authorName, title }) => {
   if (!file) return null;
 
   const data64 = await renderThumbnailBase64(file);
-  const response = await requestQortal({
+  const response = await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: THUMBNAIL_SERVICE,
@@ -190,12 +191,14 @@ const publishImage = async ({ file, index, authorName, title }) => {
   }
 
   const imageId = buildImageIdentifier(index);
-  const response = await requestQortal({
+  const data64 = await fileToBase64(file);
+  const response = await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: IMAGE_SERVICE,
     identifier: imageId,
-    file,
+    data64,
+    encoding: 'base64',
     filename: file.name || `${imageId}.jpg`,
     title: title || 'Gallery image',
     description: `Image for ${title || 'gallery'}`.slice(0, 4000),
@@ -238,7 +241,7 @@ const publishGalleryMetadata = async ({ gallery, authorName }) => {
     })),
   };
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: GALLERY_SERVICE,
@@ -270,7 +273,7 @@ const resolveGalleryUrls = async (gallery, includeImages = false) => {
 };
 
 const fetchGalleryFromSummary = async (summary, includeImages = false) => {
-  const resource = await requestQortal({
+  const resource = await requestQortium({
     action: 'FETCH_QDN_RESOURCE',
     service: GALLERY_SERVICE,
     name: summary.name,
@@ -281,7 +284,7 @@ const fetchGalleryFromSummary = async (summary, includeImages = false) => {
 };
 
 const fetchGallerySummaries = async ({ limit, offset, sortOrder }) =>
-  requestQortal({
+  requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: GALLERY_SERVICE,
     mode: 'ALL',
@@ -318,7 +321,7 @@ export const fetchGalleryPage = async ({ page = 1, pageSize = 12, sortOrder = 'n
 };
 
 export const fetchGalleryByIdentifier = async (identifier) => {
-  const summaries = await requestQortal({
+  const summaries = await requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: GALLERY_SERVICE,
     mode: 'ALL',

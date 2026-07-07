@@ -4,7 +4,7 @@ import { FaPlus, FaSearch } from 'react-icons/fa';
 import ProjectCard from '../../components/projects/ProjectCard';
 import ProjectPublishModal from '../../components/projects/ProjectPublishModal';
 import { useProjects } from '../../hooks/useProjects';
-import { isOwnerName } from '../../utils/siteConfig';
+import { isOwnerProfile } from '../../utils/siteConfig';
 import styles from './ProjectListPage.module.css';
 
 const typeConfig = {
@@ -46,7 +46,7 @@ function ProjectListPage() {
   } = useProjects(normalizedType);
 
   const config = useMemo(() => typeConfig[normalizedType], [normalizedType]);
-  const canPublishProjects = isOwnerName(profile.name);
+  const canPublishProjects = isOwnerProfile(profile);
 
   const notify = (message) => {
     setToast(message);

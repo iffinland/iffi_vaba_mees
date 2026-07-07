@@ -177,7 +177,7 @@ function BlogPublishModal({
               type="text"
               value={form.tags}
               onChange={(event) => updateField('tags', event.target.value)}
-              placeholder="forest, qortal, life"
+              placeholder="forest, qortium, life"
             />
             <span className={styles.fieldHint}>Separate tags with commas.</span>
           </label>

@@ -4,11 +4,10 @@ import {
   isQdnResourceReady,
   waitForQdnResourceReady,
 } from '../services/qdnResourceService';
-import { requestQortal } from '../utils/qortalClient';
+import { requestQortium } from '../services/qortium/qortiumClient';
 
 const directVideoExtensionPattern = /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i;
-const qTubeLinkPattern = /qortal:\/\/APP\/Q-Tube\/video\/([^"'<>\s]+)\/([^"'<>\s]+)/i;
-const qdnVideoLinkPattern = /qortal:\/\/VIDEO\/([^"'<>\s]+)\/([^"'<>\s]+)/i;
+const qdnVideoLinkPattern = /qdn:\/\/VIDEO\/([^"'<>\s]+)\/([^"'<>\s]+)/i;
 
 const trimString = (value) => (typeof value === 'string' ? value.trim() : '');
 
@@ -28,15 +27,11 @@ const extractEmbeddedSource = (value) => {
   const matches = Array.from(input.matchAll(attributePattern)).map((match) => match[1]);
   const preferred = matches.find((match) =>
     /^\/arbitrary\/VIDEO\//i.test(match) ||
-    /^qortal:\/\/APP\/Q-Tube\/video\//i.test(match) ||
-    /^qortal:\/\/VIDEO\//i.test(match) ||
+    /^qdn:\/\/VIDEO\//i.test(match) ||
     directVideoExtensionPattern.test(match),
   );
 
   if (preferred) return preferred;
-
-  const qTubeMatch = input.match(qTubeLinkPattern);
-  if (qTubeMatch) return qTubeMatch[0];
 
   const qdnVideoMatch = input.match(qdnVideoLinkPattern);
   if (qdnVideoMatch) return qdnVideoMatch[0];
@@ -74,18 +69,9 @@ const toDirectVideoCandidate = (resource) => ({
   resource,
 });
 
-const parseQortalVideoLink = (sourceUrl) => {
+const parseQortiumVideoLink = (sourceUrl) => {
   const value = extractEmbeddedSource(sourceUrl);
   if (!value) return null;
-
-  const rawQTubeMatch = value.match(qTubeLinkPattern);
-  if (rawQTubeMatch) {
-    const name = decodePathPart(rawQTubeMatch[1]);
-    const identifier = decodePathPart(rawQTubeMatch[2]);
-    if (name && identifier) {
-      return { type: 'qtube', name, identifier };
-    }
-  }
 
   const rawQdnVideoMatch = value.match(qdnVideoLinkPattern);
   if (rawQdnVideoMatch) {
@@ -100,7 +86,7 @@ const parseQortalVideoLink = (sourceUrl) => {
   const url = toUrl(value);
   if (!url) return null;
 
-  if (url.protocol === 'qortal:' && url.hostname.toUpperCase() === 'VIDEO') {
+  if (url.protocol === 'qdn:' && url.hostname.toUpperCase() === 'VIDEO') {
     const [name, identifier] = url.pathname
       .split('/')
       .filter(Boolean)
@@ -113,20 +99,6 @@ const parseQortalVideoLink = (sourceUrl) => {
   }
 
   const pathParts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
-
-  if (
-    url.protocol === 'qortal:' &&
-    url.hostname.toUpperCase() === 'APP' &&
-    pathParts[0]?.toLowerCase() === 'q-tube' &&
-    pathParts[1]?.toLowerCase() === 'video'
-  ) {
-    const name = pathParts[2];
-    const identifier = pathParts[3];
-
-    if (name && identifier) {
-      return { type: 'qtube', name, identifier };
-    }
-  }
 
   const arbitraryIndex = pathParts.findIndex((part) => part.toLowerCase() === 'arbitrary');
   const service = pathParts[arbitraryIndex + 1];
@@ -153,7 +125,7 @@ const getVideoSource = (video) => {
     };
   }
 
-  return parseQortalVideoLink(video?.sourceUrl);
+  return parseQortiumVideoLink(video?.sourceUrl);
 };
 
 const parseFetchedJson = (value) => {
@@ -236,7 +208,7 @@ const uniqueResources = (resources) => {
   });
 };
 
-const findQTubeVideoResources = async ({ name, identifier }) => {
+const findQdnVideoResources = async ({ name, identifier }) => {
   const baseIdentifier = identifier.replace(/_metadata$/, '');
   const prefixes = uniqueResources([
     { service: 'VIDEO', name, identifier: baseIdentifier },
@@ -246,7 +218,7 @@ const findQTubeVideoResources = async ({ name, identifier }) => {
 
   for (const prefixIdentifier of prefixes) {
     try {
-      const result = await requestQortal({
+      const result = await requestQortium({
         action: 'SEARCH_QDN_RESOURCES',
         service: 'VIDEO',
         mode: 'ALL',
@@ -271,14 +243,14 @@ const findQTubeVideoResources = async ({ name, identifier }) => {
         })),
       );
     } catch {
-      // Search is a best-effort fallback for Q-Tube variants.
+      // Search is a best-effort fallback for QDN video metadata variants.
     }
   }
 
   return uniqueResources(resources);
 };
 
-const resolveQTubeResources = async ({ name, identifier }) => {
+const resolveQdnMetadataResources = async ({ name, identifier }) => {
   const resources = [];
 
   if (identifier.endsWith('_metadata')) {
@@ -291,7 +263,7 @@ const resolveQTubeResources = async ({ name, identifier }) => {
 
   for (const service of ['DOCUMENT', 'JSON']) {
     try {
-      const metadata = await requestQortal({
+      const metadata = await requestQortium({
         action: 'FETCH_QDN_RESOURCE',
         service,
         name,
@@ -302,11 +274,11 @@ const resolveQTubeResources = async ({ name, identifier }) => {
         resources.push(resource);
       }
     } catch {
-      // Q-Tube deployments have used more than one metadata service; try the next one.
+      // QDN video metadata can use more than one service; try the next one.
     }
   }
 
-  resources.push(...(await findQTubeVideoResources({ name, identifier })));
+  resources.push(...(await findQdnVideoResources({ name, identifier })));
 
   return uniqueResources(resources).map(toDirectVideoCandidate);
 };
@@ -321,7 +293,7 @@ const resolveVideoResources = async (videoSource) => {
       },
     ];
   }
-  if (videoSource.type === 'qtube') return resolveQTubeResources(videoSource);
+  if (videoSource.type === 'metadata') return resolveQdnMetadataResources(videoSource);
   return [];
 };
 

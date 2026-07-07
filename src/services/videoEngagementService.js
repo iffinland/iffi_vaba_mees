@@ -1,9 +1,9 @@
 import {
   createShortId,
   encodeObjectToBase64,
-  requestQortal,
+  requestQortium,
   sanitizeIdentifierSegment,
-} from '../utils/qortalClient';
+} from './qortium/qortiumClient';
 
 const COMMENT_PREFIX = 'ivm_vc_';
 const LIKE_PREFIX = 'ivm_vl_';
@@ -27,7 +27,7 @@ export const fetchVideoComments = async (videoId, limit = 50) => {
   let offset = 0;
 
   while (comments.length < limit) {
-    const page = await requestQortal({
+    const page = await requestQortium({
       action: 'SEARCH_QDN_RESOURCES',
       service: 'DOCUMENT',
       mode: 'ALL',
@@ -46,7 +46,7 @@ export const fetchVideoComments = async (videoId, limit = 50) => {
     const resolved = await Promise.all(
       summaries.map(async (summary) => {
         try {
-          const payload = await requestQortal({
+          const payload = await requestQortium({
             action: 'FETCH_QDN_RESOURCE',
             service: 'DOCUMENT',
             name: summary.name,
@@ -108,7 +108,7 @@ export const publishVideoComment = async ({
     updated: timestamp,
   };
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: 'DOCUMENT',
@@ -139,7 +139,7 @@ export const updateVideoComment = async ({
     updated: Date.now(),
   };
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: 'DOCUMENT',
@@ -154,7 +154,7 @@ export const updateVideoComment = async ({
 };
 
 export const fetchVideoLikeCount = async (videoId) => {
-  const page = await requestQortal({
+  const page = await requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: 'DOCUMENT',
     mode: 'ALL',
@@ -181,7 +181,7 @@ export const publishVideoLike = async ({ videoId, videoTitle, authorName, author
     created: Date.now(),
   };
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: 'DOCUMENT',
@@ -196,14 +196,14 @@ export const publishVideoLike = async ({ videoId, videoTitle, authorName, author
 };
 
 export const getQortBalance = async () =>
-  requestQortal({
+  requestQortium({
     action: 'GET_WALLET_BALANCE',
     coin: 'QORT',
   });
 
 export const resolveNameAddress = async (name) => {
   if (!name) return '';
-  const response = await requestQortal({
+  const response = await requestQortium({
     action: 'GET_NAME_DATA',
     name,
   });
@@ -212,7 +212,7 @@ export const resolveNameAddress = async (name) => {
 };
 
 export const sendQortTip = async ({ recipient, amount }) =>
-  requestQortal({
+  requestQortium({
     action: 'SEND_COIN',
     coin: 'QORT',
     recipient,

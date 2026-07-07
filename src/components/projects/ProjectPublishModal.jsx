@@ -226,7 +226,7 @@ function ProjectPublishModal({
               </button>
             </div>
             {form.links.map((link, index) => (
-              <div className={styles.linkRow} key={`${index}-${link.label}`}>
+              <div className={styles.linkRow} key={`project-link-${index}`}>
                 <input
                   type="text"
                   value={link.label}
@@ -237,7 +237,7 @@ function ProjectPublishModal({
                   type="text"
                   value={link.url}
                   onChange={(event) => updateLink(index, 'url', event.target.value)}
-                  placeholder="qortal:// or https://"
+                  placeholder="qdn:// or https://"
                 />
                 <button type="button" onClick={() => removeLink(index)} aria-label="Remove link">
                   <FaTrash />

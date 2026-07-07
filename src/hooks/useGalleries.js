@@ -55,7 +55,7 @@ export const useGalleries = () => {
       try {
         setProfile(await getCurrentUserProfile());
       } catch (err) {
-        console.warn('Unable to load Qortal profile', err);
+        console.warn('Unable to load Qortium profile', err);
       }
     };
 
@@ -73,7 +73,7 @@ export const useGalleries = () => {
   const publishNewGallery = useCallback(
     async (form) => {
       if (!profile.name || !profile.address) {
-        throw new Error('A Qortal account with a registered name is required.');
+        throw new Error('A Qortium account with a registered name is required.');
       }
 
       setIsPublishing(true);
@@ -95,7 +95,7 @@ export const useGalleries = () => {
   const likeGallery = useCallback(
     async (gallery) => {
       if (!profile.name || !profile.address) {
-        throw new Error('A Qortal account with a registered name is required.');
+        throw new Error('A Qortium account with a registered name is required.');
       }
 
       await publishGalleryLike({

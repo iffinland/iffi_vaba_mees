@@ -5,7 +5,7 @@ import BlogCard from '../../components/blog/BlogCard';
 import BlogPublishModal from '../../components/blog/BlogPublishModal';
 import { useBlogPosts } from '../../hooks/useBlogPosts';
 import { buildBlogPageLink } from '../../services/blogService';
-import { isOwnerName } from '../../utils/siteConfig';
+import { isOwnerProfile } from '../../utils/siteConfig';
 import { copyTextToClipboard } from '../../utils/videoLinks';
 import styles from './BlogPage.module.css';
 
@@ -39,7 +39,7 @@ function BlogPage() {
     window.setTimeout(() => setToast(''), 2600);
   };
 
-  const canPublishPosts = isOwnerName(profile.name);
+  const canPublishPosts = isOwnerProfile(profile);
 
   const openPostDetail = (post) => {
     navigate(`/blog/${encodeURIComponent(post.identifier)}`);
@@ -55,7 +55,7 @@ function BlogPage() {
       await copyTextToClipboard(buildBlogPageLink(post));
       notify('Blog post link copied.');
     } catch {
-      notify('Unable to copy link.');
+      notify('Sharing is temporarily disabled until Qortium Home confirms the supported app deep-link format.');
     }
   };
 

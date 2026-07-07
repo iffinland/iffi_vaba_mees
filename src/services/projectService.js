@@ -1,10 +1,10 @@
 import {
   createShortId,
   encodeObjectToBase64,
-  requestQortal,
+  requestQortium,
   sanitizeIdentifierSegment,
-} from '../utils/qortalClient';
-import { isOwnerName, OWNER_QORTAL_NAME } from '../utils/siteConfig';
+} from './qortium/qortiumClient';
+import { isOwnerName, isOwnerProfile, OWNER_QORTIUM_NAME } from '../utils/siteConfig';
 import { getQdnResourceUrl } from './qdnResourceService';
 import { getCurrentUserProfile } from './videoService';
 
@@ -165,8 +165,10 @@ export const sanitizeProjectPayload = (payload = {}, summary = {}) => {
     return null;
   }
 
-  const resourceOwner = typeof summary.name === 'string' ? summary.name : payload.authorName;
-  if (!isOwnerName(resourceOwner)) {
+  const resourceOwnerName = typeof summary.name === 'string' ? summary.name : payload.authorName;
+  const resourceOwnerAddress =
+    typeof summary.address === 'string' ? summary.address : payload.authorAddress;
+  if (!isOwnerProfile({ name: resourceOwnerName, address: resourceOwnerAddress })) {
     return null;
   }
 
@@ -195,7 +197,7 @@ export const sanitizeProjectPayload = (payload = {}, summary = {}) => {
     startDate: normalizeDate(payload.startDate),
     coverResource: payload.coverResource || null,
     coverUrl: typeof payload.coverUrl === 'string' ? payload.coverUrl : '',
-    authorName: OWNER_QORTAL_NAME,
+    authorName: OWNER_QORTIUM_NAME,
     authorAddress: typeof payload.authorAddress === 'string' ? payload.authorAddress : '',
     created,
     updated: Number(payload.updated ?? summary.updated ?? created),
@@ -203,7 +205,7 @@ export const sanitizeProjectPayload = (payload = {}, summary = {}) => {
 };
 
 const fetchSummaries = async ({ limit, offset, sortOrder }) =>
-  requestQortal({
+  requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: PROJECT_SERVICE,
     mode: 'ALL',
@@ -221,7 +223,7 @@ const fetchSummaries = async ({ limit, offset, sortOrder }) =>
 const fetchProjectFromSummary = async (summary) => {
   if (!isOwnerName(summary?.name)) return null;
 
-  const resource = await requestQortal({
+  const resource = await requestQortium({
     action: 'FETCH_QDN_RESOURCE',
     service: PROJECT_SERVICE,
     name: summary.name,
@@ -240,7 +242,7 @@ const fetchProjectFromSummary = async (summary) => {
 };
 
 export const fetchProjectByIdentifier = async (identifier) => {
-  const summaries = await requestQortal({
+  const summaries = await requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: PROJECT_SERVICE,
     mode: 'ALL',
@@ -330,7 +332,7 @@ const publishCover = async ({ file, identifier, authorName, title }) => {
   }
 
   const data64 = await renderCoverBase64(file);
-  const response = await requestQortal({
+  const response = await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: COVER_SERVICE,
@@ -355,7 +357,7 @@ const publishCover = async ({ file, identifier, authorName, title }) => {
 };
 
 export const publishProject = async ({ form, authorName, authorAddress }) => {
-  if (!isOwnerName(authorName)) {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
     throw new Error('Only the site owner can publish projects.');
   }
 
@@ -390,10 +392,14 @@ export const publishProject = async ({ form, authorName, authorAddress }) => {
       created: now,
       updated: now,
     },
-    { name: authorName, identifier, created: now, updated: now },
+    { name: authorName, address: authorAddress, identifier, created: now, updated: now },
   );
 
-  await requestQortal({
+  if (!payload) {
+    throw new Error('Unable to prepare project payload for publishing.');
+  }
+
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: PROJECT_SERVICE,
@@ -407,8 +413,8 @@ export const publishProject = async ({ form, authorName, authorAddress }) => {
   return payload;
 };
 
-export const updateProject = async ({ project, form, authorName }) => {
-  if (!isOwnerName(authorName)) {
+export const updateProject = async ({ project, form, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
     throw new Error('Only the site owner can edit projects.');
   }
 
@@ -444,10 +450,14 @@ export const updateProject = async ({ project, form, authorName }) => {
       coverUrl,
       updated: Date.now(),
     },
-    { name: authorName, identifier: project.identifier },
+    { name: authorName, address: authorAddress, identifier: project.identifier },
   );
 
-  await requestQortal({
+  if (!updatedProject) {
+    throw new Error('Unable to prepare project payload for publishing.');
+  }
+
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: PROJECT_SERVICE,

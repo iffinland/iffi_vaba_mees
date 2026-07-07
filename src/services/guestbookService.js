@@ -1,32 +1,12 @@
+import {
+  encodeObjectToBase64,
+  getSelectedQortiumProfile,
+  requestQortium,
+} from './qortium/qortiumClient';
+
 const ENTRY_IDENTIFIER_PREFIX = 'iffivabamees_guestbook_';
 const ENTRY_SERVICE = 'DOCUMENT';
 const SEARCH_PAGE_SIZE = 100;
-
-const resolveQortalRequest = () => {
-  if (typeof window !== 'undefined' && typeof window.qortalRequest === 'function') {
-    return window.qortalRequest;
-  }
-  if (typeof globalThis !== 'undefined' && typeof globalThis.qortalRequest === 'function') {
-    return globalThis.qortalRequest;
-  }
-  // Qortal UI can expose qortalRequest as an injected global function.
-  if (typeof qortalRequest !== 'undefined' && typeof qortalRequest === 'function') {
-    // eslint-disable-next-line no-undef
-    return qortalRequest;
-  }
-  throw new Error('qortalRequest API is not available. Open the Qortal UI first.');
-};
-
-const encodeObjectToBase64 = (payload) => {
-  const json = JSON.stringify(payload);
-  if (typeof btoa === 'function') {
-    return btoa(unescape(encodeURIComponent(json)));
-  }
-  if (typeof globalThis !== 'undefined' && globalThis.Buffer) {
-    return globalThis.Buffer.from(json, 'utf-8').toString('base64');
-  }
-  throw new Error('Unable to encode payload to base64.');
-};
 
 const sanitizeNameSegment = (value) => {
   if (typeof value !== 'string' || value.length === 0) {
@@ -80,12 +60,12 @@ const sanitizeEntry = (payload = {}, summary = {}) => {
   };
 };
 
-const fetchSummaries = async (qRequest) => {
+const fetchSummaries = async () => {
   const aggregated = [];
   let offset = 0;
 
   while (true) {
-    const page = await qRequest({
+    const page = await requestQortium({
       action: 'SEARCH_QDN_RESOURCES',
       service: ENTRY_SERVICE,
       mode: 'ALL',
@@ -114,8 +94,7 @@ const fetchSummaries = async (qRequest) => {
 };
 
 export const fetchGuestbookEntries = async () => {
-  const qRequest = resolveQortalRequest();
-  const summaries = await fetchSummaries(qRequest);
+  const summaries = await fetchSummaries();
 
   const entries = [];
 
@@ -129,7 +108,7 @@ export const fetchGuestbookEntries = async () => {
     }
 
     try {
-      const resource = await qRequest({
+      const resource = await requestQortium({
         action: 'FETCH_QDN_RESOURCE',
         service: ENTRY_SERVICE,
         name: summary.name,
@@ -149,46 +128,12 @@ export const fetchGuestbookEntries = async () => {
   );
 };
 
-const normalizeNamesResponse = (response) => {
-  if (!Array.isArray(response)) {
-    return [];
-  }
-  const names = response
-    .map((entry) => {
-      if (typeof entry === 'string') {
-        return entry.trim();
-      }
-      if (entry && typeof entry === 'object' && typeof entry.name === 'string') {
-        return entry.name.trim();
-      }
-      return null;
-    })
-    .filter((value) => !!value);
-
-  return Array.from(new Set(names));
-};
-
 export const getCurrentUserProfile = async () => {
-  const qRequest = resolveQortalRequest();
-  const account = await qRequest({ action: 'GET_USER_ACCOUNT' });
-  if (!account || typeof account.address !== 'string') {
-    return { address: '', name: '', names: [] };
-  }
-
-  const namesResponse = await qRequest({
-    action: 'GET_ACCOUNT_NAMES',
-    address: account.address,
-    limit: 20,
-    offset: 0,
-    reverse: false,
-  });
-
-  const names = normalizeNamesResponse(namesResponse);
-
+  const profile = await getSelectedQortiumProfile();
   return {
-    address: account.address,
-    names,
-    name: names[0] ?? '',
+    address: profile.address,
+    names: profile.names,
+    name: profile.name,
   };
 };
 
@@ -199,9 +144,8 @@ export const publishGuestbookEntry = async ({
   existingIdentifier,
   created,
 }) => {
-  const qRequest = resolveQortalRequest();
   if (!authorName) {
-    throw new Error('Qortal name is required to publish a guestbook entry.');
+    throw new Error('Qortium name is required to publish a guestbook entry.');
   }
 
   const identifier = existingIdentifier ?? generateEntryIdentifier(authorName, authorAddress);
@@ -217,7 +161,7 @@ export const publishGuestbookEntry = async ({
     updated: now,
   };
 
-  await qRequest({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: ENTRY_SERVICE,

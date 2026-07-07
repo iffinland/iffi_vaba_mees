@@ -41,7 +41,7 @@ function GuestbookPage() {
         console.error(err);
         setError(
           err?.message ||
-            'Unable to load guestbook entries. Please ensure Qortal UI is open.',
+            'Unable to load guestbook entries. Please ensure Qortium Home is open.',
         );
       } finally {
         setIsLoading(false);
@@ -97,11 +97,11 @@ function GuestbookPage() {
 
   const openCreateModal = () => {
     if (!userProfile.address) {
-      setError('Please log into Qortal UI to write in the guestbook.');
+      setError('Please log into Qortium Home to write in the guestbook.');
       return;
     }
     if (!userProfile.name) {
-      setError('You need a registered Qortal name before posting to the guestbook.');
+      setError('You need a registered Qortium name before posting to the guestbook.');
       return;
     }
     setEditingEntry(null);
@@ -124,7 +124,7 @@ function GuestbookPage() {
       return;
     }
     if (!userProfile.address || !userProfile.name) {
-      setFormError('A valid Qortal account with a registered name is required.');
+      setFormError('A valid Qortium account with a registered name is required.');
       return;
     }
 
@@ -256,7 +256,7 @@ function GuestbookPage() {
             </div>
             <form onSubmit={handleSubmit} className={styles.modalForm}>
               <label>
-                Qortal name
+                Qortium name
                 <input type="text" value={userProfile.name} readOnly />
               </label>
               <label>

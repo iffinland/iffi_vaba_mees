@@ -69,7 +69,7 @@ export const useBlogComments = ({ profile, notify }) => {
     async ({ messageHtml, parentId = '' }) => {
       if (!activePost) return false;
       if (!profile.name || !profile.address) {
-        setError('A Qortal account with a registered name is required.');
+        setError('A Qortium account with a registered name is required.');
         return false;
       }
 
@@ -103,7 +103,7 @@ export const useBlogComments = ({ profile, notify }) => {
     async ({ comment, messageHtml }) => {
       if (!activePost) return false;
       if (!profile.name || !profile.address) {
-        setError('A Qortal account with a registered name is required.');
+        setError('A Qortium account with a registered name is required.');
         return false;
       }
 

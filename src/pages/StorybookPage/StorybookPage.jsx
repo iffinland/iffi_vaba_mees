@@ -4,7 +4,7 @@ import { FaPlus, FaSearch } from 'react-icons/fa';
 import StoryEntryCard from '../../components/storybook/StoryEntryCard';
 import StoryEntryPublishModal from '../../components/storybook/StoryEntryPublishModal';
 import { useLifeStoryEntries } from '../../hooks/useLifeStoryEntries';
-import { isOwnerName } from '../../utils/siteConfig';
+import { isOwnerProfile } from '../../utils/siteConfig';
 import styles from './StorybookPage.module.css';
 
 function StorybookPage() {
@@ -25,7 +25,7 @@ function StorybookPage() {
     setSearchQuery,
   } = useLifeStoryEntries();
 
-  const canPublishEntries = isOwnerName(profile.name);
+  const canPublishEntries = isOwnerProfile(profile);
 
   const notify = (message) => {
     setToast(message);

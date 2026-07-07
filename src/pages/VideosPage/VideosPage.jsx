@@ -14,9 +14,8 @@ import {
   buildVideoPageLink,
   copyTextToClipboard,
 } from '../../utils/videoLinks';
+import { isOwnerProfile } from '../../utils/siteConfig';
 import styles from './VideosPage.module.css';
-
-const OWNER_QORTAL_NAME = 'iffi vaba mees';
 
 function VideosPage() {
   const navigate = useNavigate();
@@ -53,7 +52,7 @@ function VideosPage() {
 
   const comments = useVideoComments({ profile, notify });
   const tip = useQortTip({ notify });
-  const canPublishVideos = profile.name.trim().toLowerCase() === OWNER_QORTAL_NAME;
+  const canPublishVideos = isOwnerProfile(profile);
 
   const handlePublish = async (form) => {
     await publishNewVideo(form);
@@ -65,7 +64,7 @@ function VideosPage() {
       await copyTextToClipboard(buildVideoPageLink(video));
       notify('Video link copied.');
     } catch {
-      notify('Unable to copy link.');
+      notify('Sharing is temporarily disabled until Qortium Home confirms the supported app deep-link format.');
     }
   };
 
@@ -73,7 +72,7 @@ function VideosPage() {
     const chatLink = buildVideoChatEmbedLink(video);
 
     if (!chatLink) {
-      notify('Chat embed link is unavailable for this video.');
+      notify('Sharing is temporarily disabled until Qortium Home confirms the supported app deep-link format.');
       return;
     }
 
@@ -81,7 +80,7 @@ function VideosPage() {
       await copyTextToClipboard(chatLink);
       notify('Chat embed link copied.');
     } catch {
-      notify('Unable to copy chat embed link.');
+      notify('Sharing is temporarily disabled until Qortium Home confirms the supported app deep-link format.');
     }
   };
 

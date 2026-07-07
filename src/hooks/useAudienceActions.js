@@ -39,9 +39,9 @@ export function useAudienceActions() {
 
     try {
       const names = await followWebsiteNames();
-      const message = `Following ${formatNameList(names)}. Qortal Core can now mirror this website's resources.`;
+      const message = `Following ${formatNameList(names)}. Qortium Home can now mirror this website's resources.`;
       setFollowMessage(message);
-      showNotice('Follow added to Qortal.');
+      showNotice('Follow added to Qortium.');
     } catch (error) {
       setFollowMessage(error instanceof Error ? error.message : 'Unable to follow this website.');
     } finally {

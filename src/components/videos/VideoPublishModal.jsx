@@ -98,8 +98,8 @@ function VideoPublishModal({
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.sourceTabs}>
             {[
-              ['qtube', 'Q-Tube link'],
-              ['bridge', 'Qortal video bridge'],
+              ['qtube', 'External link'],
+              ['bridge', 'QDN video resource'],
               ['upload', 'Upload file'],
             ].map(([value, label]) => (
               <button
@@ -133,15 +133,15 @@ function VideoPublishModal({
             </label>
           ) : (
             <label>
-              {form.sourceType === 'bridge' ? 'Qortal video bridge QDN URI' : 'Video link'}
+              {form.sourceType === 'bridge' ? 'QDN video URI' : 'Video link'}
               <input
                 type="text"
                 value={form.sourceUrl}
                 onChange={(event) => updateField('sourceUrl', event.target.value)}
                 placeholder={
                   form.sourceType === 'bridge'
-                    ? 'Paste qortal://VIDEO/Qortal-Video-Bridge/video-identifier'
-                    : 'Paste a Q-Tube video link'
+                    ? 'Paste qdn://VIDEO/name/video-identifier'
+                    : 'Paste a direct video link'
                 }
               />
             </label>

@@ -1,10 +1,10 @@
 import {
   createShortId,
   encodeObjectToBase64,
-  requestQortal,
+  requestQortium,
   sanitizeIdentifierSegment,
-} from '../utils/qortalClient';
-import { isOwnerName, OWNER_QORTAL_NAME } from '../utils/siteConfig';
+} from './qortium/qortiumClient';
+import { isOwnerName, isOwnerProfile, OWNER_QORTIUM_NAME } from '../utils/siteConfig';
 import { getQdnResourceUrl } from './qdnResourceService';
 import { getCurrentUserProfile } from './videoService';
 
@@ -168,8 +168,10 @@ export const sanitizeLifeStoryPayload = (payload = {}, summary = {}) => {
     return null;
   }
 
-  const resourceOwner = typeof summary.name === 'string' ? summary.name : payload.authorName;
-  if (!isOwnerName(resourceOwner)) {
+  const resourceOwnerName = typeof summary.name === 'string' ? summary.name : payload.authorName;
+  const resourceOwnerAddress =
+    typeof summary.address === 'string' ? summary.address : payload.authorAddress;
+  if (!isOwnerProfile({ name: resourceOwnerName, address: resourceOwnerAddress })) {
     return null;
   }
 
@@ -203,7 +205,7 @@ export const sanitizeLifeStoryPayload = (payload = {}, summary = {}) => {
     location: typeof payload.location === 'string' ? payload.location.trim() : '',
     coverResource: payload.coverResource || null,
     coverUrl: typeof payload.coverUrl === 'string' ? payload.coverUrl : '',
-    authorName: OWNER_QORTAL_NAME,
+    authorName: OWNER_QORTIUM_NAME,
     authorAddress: typeof payload.authorAddress === 'string' ? payload.authorAddress : '',
     created,
     updated: Number(payload.updated ?? summary.updated ?? created),
@@ -211,7 +213,7 @@ export const sanitizeLifeStoryPayload = (payload = {}, summary = {}) => {
 };
 
 const fetchSummaries = async ({ limit, offset, sortOrder = 'oldest' }) =>
-  requestQortal({
+  requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: LIFE_STORY_SERVICE,
     mode: 'ALL',
@@ -229,7 +231,7 @@ const fetchSummaries = async ({ limit, offset, sortOrder = 'oldest' }) =>
 const fetchEntryFromSummary = async (summary) => {
   if (!isOwnerName(summary?.name)) return null;
 
-  const resource = await requestQortal({
+  const resource = await requestQortium({
     action: 'FETCH_QDN_RESOURCE',
     service: LIFE_STORY_SERVICE,
     name: summary.name,
@@ -248,7 +250,7 @@ const fetchEntryFromSummary = async (summary) => {
 };
 
 export const fetchLifeStoryByIdentifier = async (identifier) => {
-  const summaries = await requestQortal({
+  const summaries = await requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: LIFE_STORY_SERVICE,
     mode: 'ALL',
@@ -318,7 +320,7 @@ const publishCover = async ({ file, identifier, authorName, title }) => {
   }
 
   const data64 = await renderCoverBase64(file);
-  const response = await requestQortal({
+  const response = await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: COVER_SERVICE,
@@ -343,7 +345,7 @@ const publishCover = async ({ file, identifier, authorName, title }) => {
 };
 
 export const publishLifeStoryEntry = async ({ form, authorName, authorAddress }) => {
-  if (!isOwnerName(authorName)) {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
     throw new Error('Only the site owner can publish life story entries.');
   }
 
@@ -380,10 +382,14 @@ export const publishLifeStoryEntry = async ({ form, authorName, authorAddress })
       created: now,
       updated: now,
     },
-    { name: authorName, identifier, created: now, updated: now },
+    { name: authorName, address: authorAddress, identifier, created: now, updated: now },
   );
 
-  await requestQortal({
+  if (!payload) {
+    throw new Error('Unable to prepare life story payload for publishing.');
+  }
+
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: LIFE_STORY_SERVICE,
@@ -397,8 +403,8 @@ export const publishLifeStoryEntry = async ({ form, authorName, authorAddress })
   return payload;
 };
 
-export const updateLifeStoryEntry = async ({ entry, form, authorName }) => {
-  if (!isOwnerName(authorName)) {
+export const updateLifeStoryEntry = async ({ entry, form, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
     throw new Error('Only the site owner can edit life story entries.');
   }
 
@@ -432,10 +438,14 @@ export const updateLifeStoryEntry = async ({ entry, form, authorName }) => {
       coverUrl,
       updated: Date.now(),
     },
-    { name: authorName, identifier: entry.identifier },
+    { name: authorName, address: authorAddress, identifier: entry.identifier },
   );
 
-  await requestQortal({
+  if (!updatedEntry) {
+    throw new Error('Unable to prepare life story payload for publishing.');
+  }
+
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: LIFE_STORY_SERVICE,

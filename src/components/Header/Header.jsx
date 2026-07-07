@@ -6,13 +6,11 @@ import {
   FaBookOpen,
   FaPenSquare,
   FaVideo,
-  FaEnvelope,
   FaHome,
   FaRegComments,
 } from 'react-icons/fa';
 import AudienceActions from '../AudienceActions/AudienceActions';
 import DirectMessageModal from '../DirectMessageModal/DirectMessageModal';
-import { OWNER_QMAIL_LINK } from '../../utils/siteConfig';
 
 function Header() {
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
@@ -43,9 +41,6 @@ function Header() {
         <Link to="/guestbook" className={styles.navButton} aria-label="Guestbook">
           <FaBookOpen />
         </Link>
-        <a href={OWNER_QMAIL_LINK} className={styles.navButton} aria-label="Q-Mail">
-          <FaEnvelope />
-        </a>
         <button
           type="button"
           className={styles.navButton}

@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { FaEnvelope, FaTimes } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 import { sendOwnerDirectMessage } from '../../services/directMessageService';
-import { OWNER_QMAIL_LINK } from '../../utils/siteConfig';
 import styles from './DirectMessageModal.module.css';
 
 function DirectMessageModal({ isOpen, onClose, onSent }) {
@@ -51,14 +50,6 @@ function DirectMessageModal({ isOpen, onClose, onSent }) {
               rows={7}
             />
           </label>
-
-          <div className={styles.mailAlternative}>
-            <span>Prefer Q-Mail?</span>
-            <a href={OWNER_QMAIL_LINK}>
-              <FaEnvelope />
-              <span>Open Q-Mail</span>
-            </a>
-          </div>
 
           {error && <p className={styles.error}>{error}</p>}
 

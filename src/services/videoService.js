@@ -1,9 +1,11 @@
 import {
   createShortId,
   encodeObjectToBase64,
-  requestQortal,
+  fileToBase64,
+  getSelectedQortiumProfile,
+  requestQortium,
   sanitizeIdentifierSegment,
-} from '../utils/qortalClient';
+} from './qortium/qortiumClient';
 import { getQdnResourceUrl } from './qdnResourceService';
 
 export const VIDEO_METADATA_PREFIX = 'iffivabamees_video_';
@@ -164,34 +166,16 @@ export const sanitizeVideoPayload = (payload = {}, summary = {}) => {
 };
 
 export const getCurrentUserProfile = async () => {
-  const account = await requestQortal({ action: 'GET_USER_ACCOUNT' });
-  if (!account?.address) {
-    return { address: '', name: '', names: [] };
-  }
-
-  const namesResponse = await requestQortal({
-    action: 'GET_ACCOUNT_NAMES',
-    address: account.address,
-    limit: 20,
-    offset: 0,
-    reverse: false,
-  });
-
-  const names = Array.isArray(namesResponse)
-    ? namesResponse
-        .map((entry) => (typeof entry === 'string' ? entry : entry?.name))
-        .filter(Boolean)
-    : [];
-
+  const profile = await getSelectedQortiumProfile();
   return {
-    address: account.address,
-    name: names[0] ?? '',
-    names,
+    address: profile.address,
+    name: profile.name,
+    names: profile.names,
   };
 };
 
 const fetchSummaries = async ({ limit, offset, sortOrder }) =>
-  requestQortal({
+  requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: VIDEO_SERVICE,
     mode: 'ALL',
@@ -207,7 +191,7 @@ const fetchSummaries = async ({ limit, offset, sortOrder }) =>
   });
 
 const fetchVideoFromSummary = async (summary) => {
-  const resource = await requestQortal({
+  const resource = await requestQortium({
     action: 'FETCH_QDN_RESOURCE',
     service: VIDEO_SERVICE,
     name: summary.name,
@@ -232,7 +216,7 @@ const fetchVideoFromSummary = async (summary) => {
 };
 
 export const fetchVideoByIdentifier = async (identifier) => {
-  const summaries = await requestQortal({
+  const summaries = await requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: VIDEO_SERVICE,
     mode: 'ALL',
@@ -376,7 +360,7 @@ const publishVideoThumbnail = async ({ file, identifier, authorName, title }) =>
 
   const data64 = await renderThumbnailBase64(file);
 
-  const thumbnailResponse = await requestQortal({
+  const thumbnailResponse = await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: THUMBNAIL_SERVICE,
@@ -419,12 +403,14 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
   });
 
   if (form.sourceType === 'upload' && form.videoFile) {
-    const videoResponse = await requestQortal({
+    const data64 = await fileToBase64(form.videoFile);
+    const videoResponse = await requestQortium({
       action: 'PUBLISH_QDN_RESOURCE',
       name: authorName,
       service: 'VIDEO',
       identifier,
-      file: form.videoFile,
+      data64,
+      encoding: 'base64',
       filename: form.videoFile.name || `${identifier}.mp4`,
       title: toQdnTitle(form.title, 'Untitled video'),
       description: toQdnDescription(toPlainText(form.descriptionHtml), 'Uploaded video'),
@@ -458,7 +444,7 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
     updated: now,
   });
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: VIDEO_SERVICE,
@@ -490,12 +476,14 @@ export const updateVideo = async ({ video, form, authorName }) => {
   }
 
   if (nextSourceType === 'upload' && form.videoFile) {
-    const videoResponse = await requestQortal({
+    const data64 = await fileToBase64(form.videoFile);
+    const videoResponse = await requestQortium({
       action: 'PUBLISH_QDN_RESOURCE',
       name: authorName,
       service: 'VIDEO',
       identifier: video.identifier,
-      file: form.videoFile,
+      data64,
+      encoding: 'base64',
       filename: form.videoFile.name || `${video.identifier}.mp4`,
       title: toQdnTitle(form.title || video.title, 'Untitled video'),
       description: toQdnDescription(
@@ -528,7 +516,7 @@ export const updateVideo = async ({ video, form, authorName }) => {
     updated: Date.now(),
   });
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: VIDEO_SERVICE,
@@ -550,7 +538,7 @@ export const updateVideoDescription = async ({ video, descriptionHtml, authorNam
     updated: Date.now(),
   });
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: authorName,
     service: VIDEO_SERVICE,

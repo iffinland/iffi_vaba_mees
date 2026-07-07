@@ -1,11 +1,11 @@
 import {
   createShortId,
   encodeObjectToBase64,
-  hasQortalBridge,
-  requestQortal,
+  hasQortiumBridge,
+  requestQortium,
   sanitizeIdentifierSegment,
-} from '../utils/qortalClient';
-import { OWNER_QORTAL_NAME } from '../utils/siteConfig';
+} from './qortium/qortiumClient';
+import { OWNER_QORTIUM_NAME } from '../utils/siteConfig';
 import { getCurrentUserProfile } from './videoService';
 
 export const SUPPORT_ROUTE = '/support';
@@ -40,9 +40,9 @@ const buildSupportIdentifier = ({ supporterName, supporterAddress }) => {
 };
 
 export const resolveOwnerAddress = async () => {
-  const response = await requestQortal({
+  const response = await requestQortium({
     action: 'GET_NAME_DATA',
-    name: OWNER_QORTAL_NAME,
+    name: OWNER_QORTIUM_NAME,
   });
 
   if (!response?.owner) {
@@ -53,7 +53,7 @@ export const resolveOwnerAddress = async () => {
 };
 
 export const sendSupportPayment = async ({ recipientAddress, amount }) => {
-  const response = await requestQortal({
+  const response = await requestQortium({
     action: 'SEND_COIN',
     coin: 'QORT',
     recipient: recipientAddress,
@@ -75,7 +75,7 @@ export const publishSupportRecord = async ({
   supporterName,
 }) => {
   if (!supporterName) {
-    throw new Error('A Qortal name is required to publish a support record.');
+    throw new Error('A Qortium name is required to publish a support record.');
   }
 
   const paidAt = Date.now();
@@ -87,7 +87,7 @@ export const publishSupportRecord = async ({
     schema: 'ivm-monthly-support@v1',
     id: identifier,
     identifier,
-    ownerName: OWNER_QORTAL_NAME,
+    ownerName: OWNER_QORTIUM_NAME,
     ownerAddress,
     supporterName,
     supporterAddress,
@@ -99,14 +99,14 @@ export const publishSupportRecord = async ({
     created: paidAt,
   };
 
-  await requestQortal({
+  await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     name: supporterName,
     service: SUPPORT_SERVICE,
     identifier,
     data64: encodeObjectToBase64(payload),
     encoding: 'base64',
-    title: `Monthly support for ${OWNER_QORTAL_NAME}`.slice(0, 80),
+    title: `Monthly support for ${OWNER_QORTIUM_NAME}`.slice(0, 80),
     description: `${amountQort} QORT monthly support record`,
   });
 
@@ -125,7 +125,7 @@ export const createMonthlySupportPayment = async ({ amount }) => {
   ]);
 
   if (!supporterProfile.address || !supporterProfile.name) {
-    throw new Error('A Qortal account with a registered name is required.');
+    throw new Error('A Qortium account with a registered name is required.');
   }
 
   const paymentTxSignature = await sendSupportPayment({
@@ -162,7 +162,7 @@ const sanitizeSupportRecord = (payload = {}, summary = {}) => {
   return {
     id: identifier,
     identifier,
-    ownerName: payload.ownerName || OWNER_QORTAL_NAME,
+    ownerName: payload.ownerName || OWNER_QORTIUM_NAME,
     ownerAddress: typeof payload.ownerAddress === 'string' ? payload.ownerAddress : '',
     supporterName: typeof payload.supporterName === 'string' ? payload.supporterName : summary.name || '',
     supporterAddress:
@@ -179,7 +179,7 @@ const sanitizeSupportRecord = (payload = {}, summary = {}) => {
 
 const fetchSupportRecord = async (summary) => {
   try {
-    const payload = await requestQortal({
+    const payload = await requestQortium({
       action: 'FETCH_QDN_RESOURCE',
       service: SUPPORT_SERVICE,
       name: summary.name,
@@ -194,7 +194,7 @@ const fetchSupportRecord = async (summary) => {
 };
 
 const fetchCurrentSupportRecords = async ({ supporterName, limit = 12 }) => {
-  const summaries = await requestQortal({
+  const summaries = await requestQortium({
     action: 'SEARCH_QDN_RESOURCES',
     service: SUPPORT_SERVICE,
     mode: 'ALL',
@@ -220,7 +220,7 @@ const fetchCurrentSupportRecords = async ({ supporterName, limit = 12 }) => {
 };
 
 export const getMonthlySupportStatus = async () => {
-  if (!hasQortalBridge()) {
+  if (!hasQortiumBridge()) {
     return { state: 'unavailable', record: null };
   }
 

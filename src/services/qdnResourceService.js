@@ -1,4 +1,4 @@
-import { requestQortal } from '../utils/qortalClient';
+import { requestQortium } from './qortium/qortiumClient';
 
 const QDN_READY_STATUS = 'READY';
 const QDN_BUILDABLE_STATUSES = new Set([
@@ -87,7 +87,7 @@ const isTerminalQdnError = (status) =>
   QDN_TERMINAL_ERROR_STATUSES.has(normalizeStatusField(status));
 
 export const getQdnResourceStatus = async ({ service, name, identifier, build = false }) => {
-  const result = await requestQortal({
+  const result = await requestQortium({
     action: 'GET_QDN_RESOURCE_STATUS',
     service,
     name,
@@ -145,7 +145,7 @@ export const waitForQdnResourceReady = async ({
 };
 
 export const getQdnResourceUrl = async ({ service, name, identifier }) => {
-  const result = await requestQortal({
+  const result = await requestQortium({
     action: 'GET_QDN_RESOURCE_URL',
     service,
     name,
