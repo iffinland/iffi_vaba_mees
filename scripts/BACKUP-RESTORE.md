@@ -1,11 +1,12 @@
 # Backup and Restore Guide
 
-This guide explains how to use the workspace backup and restore scripts.
+This guide explains how to use the workspace backup and restore scripts for the QORTIUM workspace.
 
 ## Location
 
-- Backups are stored in `~/VS-Code-Projects/_workspace_backups/QORTIUM`
-- Backup filenames follow `discussion-boards-workspace-YYYY-MM-DD_HH-MM-SS.tar.gz`
+- Backups are stored in `/home/iffiolen/VS-Code-Projects/_workspace_backups/QORTIUM`
+- Backup filenames follow `qortium-iffi-vaba-mees-YYYY-MM-DD_HH-MM-SS.tar.gz`
+- The restore script also recognizes older `discussion-boards-workspace-*.tar.gz` archives for compatibility
 
 ## Create a backup
 
@@ -18,6 +19,7 @@ npm run backup:workspace
 This command:
 
 - creates a `.tar.gz` backup of the workspace
+- stores it in the QORTIUM backup directory
 - adds a timestamp to the filename
 - keeps the newest backups automatically
 - removes older backups automatically

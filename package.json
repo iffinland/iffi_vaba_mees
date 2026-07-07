@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "backup:workspace": "bash scripts/backup-workspace.sh",
+    "restore:workspace": "bash scripts/restore-workspace.sh"
   },
   "dependencies": {
     "npm": "^11.5.2",

@@ -2,7 +2,8 @@
 set -euo pipefail
 
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKUP_DIR="${HOME}/VS-Code-Projects/_workspace_backups/QORTIUM"
+BACKUP_DIR="/home/iffiolen/VS-Code-Projects/_workspace_backups/QORTIUM"
+ARCHIVE_PREFIX="qortium-iffi-vaba-mees"
 SELECTION="${1:-}"
 
 if [[ ! -d "${BACKUP_DIR}" ]]; then
@@ -10,7 +11,7 @@ if [[ ! -d "${BACKUP_DIR}" ]]; then
   exit 1
 fi
 
-mapfile -t backups < <(find "${BACKUP_DIR}" -maxdepth 1 -type f -name 'discussion-boards-workspace-*.tar.gz' | sort -r)
+mapfile -t backups < <(find "${BACKUP_DIR}" -maxdepth 1 -type f \( -name "${ARCHIVE_PREFIX}-*.tar.gz" -o -name 'discussion-boards-workspace-*.tar.gz' \) | sort -r)
 
 if ((${#backups[@]} == 0)); then
   echo "No backups found in: ${BACKUP_DIR}"

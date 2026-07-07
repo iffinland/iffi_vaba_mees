@@ -2,10 +2,11 @@
 set -euo pipefail
 
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKUP_DIR="${HOME}/VS-Code-Projects/_workspace_backups/QORTIUM"
+BACKUP_DIR="/home/iffiolen/VS-Code-Projects/_workspace_backups/QORTIUM"
 RETENTION_COUNT="${BACKUP_RETENTION:-3}"
 TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
-BACKUP_FILE="${BACKUP_DIR}/discussion-boards-workspace-${TIMESTAMP}.tar.gz"
+ARCHIVE_PREFIX="qortium-iffi-vaba-mees"
+BACKUP_FILE="${BACKUP_DIR}/${ARCHIVE_PREFIX}-${TIMESTAMP}.tar.gz"
 
 mkdir -p "${BACKUP_DIR}"
 
@@ -21,7 +22,7 @@ fi
 tar -czf "${BACKUP_FILE}" -C "${WORKSPACE_DIR}" .
 echo "Backup created: ${BACKUP_FILE}"
 
-mapfile -t backups < <(find "${BACKUP_DIR}" -maxdepth 1 -type f -name 'discussion-boards-workspace-*.tar.gz' | sort -r)
+mapfile -t backups < <(find "${BACKUP_DIR}" -maxdepth 1 -type f \( -name "${ARCHIVE_PREFIX}-*.tar.gz" -o -name 'discussion-boards-workspace-*.tar.gz' \) | sort -r)
 
 if ((${#backups[@]} > RETENTION_COUNT)); then
   for old_backup in "${backups[@]:RETENTION_COUNT}"; do
