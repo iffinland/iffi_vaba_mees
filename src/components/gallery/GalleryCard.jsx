@@ -1,4 +1,4 @@
-import { FaCommentDots, FaHeart, FaImages, FaPaperPlane, FaShareAlt } from 'react-icons/fa';
+import { FaCommentDots, FaEdit, FaHeart, FaImages, FaPaperPlane, FaShareAlt } from 'react-icons/fa';
 import styles from './GalleryCard.module.css';
 
 const truncate = (value = '', max = 180) => {
@@ -6,7 +6,7 @@ const truncate = (value = '', max = 180) => {
   return `${value.slice(0, max).trim()}...`;
 };
 
-function GalleryCard({ gallery, likeCount, onComment, onLike, onOpen, onShare, onTip }) {
+function GalleryCard({ canEdit, gallery, likeCount, onComment, onEdit, onLike, onOpen, onShare, onTip }) {
   const stopCardClick = (event) => {
     event.stopPropagation();
   };
@@ -43,6 +43,19 @@ function GalleryCard({ gallery, likeCount, onComment, onLike, onOpen, onShare, o
       </div>
 
       <div className={styles.actions}>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={(event) => {
+              stopCardClick(event);
+              onEdit(gallery, event);
+            }}
+            aria-label="Edit gallery"
+            title="Edit"
+          >
+            <FaEdit />
+          </button>
+        )}
         <button
           type="button"
           onClick={(event) => {

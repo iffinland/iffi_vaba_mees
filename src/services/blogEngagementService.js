@@ -25,13 +25,14 @@ const toAuthorKey = (value) => sanitizeIdentifierSegment(value).slice(0, 16);
 export const fetchBlogComments = async (postId, limit = 50) => {
   const comments = [];
   let offset = 0;
+  const entityKey = toEntityKey(postId);
 
   while (comments.length < limit) {
     const page = await requestQortium({
       action: 'SEARCH_QDN_RESOURCES',
       service: 'DOCUMENT',
       mode: 'ALL',
-      identifier: COMMENT_PREFIX,
+      identifier: `${COMMENT_PREFIX}${entityKey}_`,
       prefix: true,
       limit: PAGE_SIZE,
       offset,
@@ -154,20 +155,30 @@ export const updateBlogComment = async ({
 };
 
 export const fetchBlogLikeCount = async (postId) => {
-  const page = await requestQortium({
-    action: 'SEARCH_QDN_RESOURCES',
-    service: 'DOCUMENT',
-    mode: 'ALL',
-    identifier: `${LIKE_PREFIX}${toLikeEntityKey(postId)}_`,
-    prefix: true,
-    limit: PAGE_SIZE,
-    offset: 0,
-    reverse: true,
-    includeMetadata: false,
-    excludeBlocked: true,
-  });
+  let totalCount = 0;
+  let offset = 0;
 
-  return Array.isArray(page) ? page.length : 0;
+  while (true) {
+    const page = await requestQortium({
+      action: 'SEARCH_QDN_RESOURCES',
+      service: 'DOCUMENT',
+      mode: 'ALL',
+      identifier: `${LIKE_PREFIX}${toLikeEntityKey(postId)}_`,
+      prefix: true,
+      limit: PAGE_SIZE,
+      offset,
+      reverse: true,
+      includeMetadata: false,
+      excludeBlocked: true,
+    });
+
+    const items = Array.isArray(page) ? page : [];
+    totalCount += items.length;
+    if (items.length < PAGE_SIZE) break;
+    offset += items.length;
+  }
+
+  return totalCount;
 };
 
 export const publishBlogLike = async ({ postId, postTitle, authorName, authorAddress }) => {

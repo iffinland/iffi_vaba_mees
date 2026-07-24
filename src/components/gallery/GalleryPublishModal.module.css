@@ -106,6 +106,26 @@
   resize: vertical;
 }
 
+.imageFields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.imageFields input {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  font: inherit;
+  background: #fff;
+  font-size: 0.9rem;
+}
+
+.imageFields textarea {
+  min-height: 52px;
+  font-size: 0.9rem;
+}
+
 .rowActions {
   display: flex;
   gap: 0.35rem;

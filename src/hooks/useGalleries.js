@@ -3,6 +3,7 @@ import {
   fetchGalleryPage,
   getCurrentUserProfile,
   publishGallery,
+  updateGallery,
 } from '../services/galleryService';
 import {
   fetchGalleryLikeCount,
@@ -18,6 +19,7 @@ export const useGalleries = () => {
   const [sortOrder, setSortOrder] = useState('newest');
   const [isLoading, setIsLoading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
   const [hasNextPage, setHasNextPage] = useState(false);
   const [likeCounts, setLikeCounts] = useState({});
@@ -92,6 +94,33 @@ export const useGalleries = () => {
     [profile.address, profile.name],
   );
 
+  const updateExistingGallery = useCallback(
+    async (gallery, form) => {
+      if (!profile.name || !profile.address) {
+        throw new Error('A Qortium account with a registered name is required.');
+      }
+
+      setIsUpdating(true);
+      try {
+        const updated = await updateGallery({
+          gallery,
+          form,
+          authorName: profile.name,
+          authorAddress: profile.address,
+        });
+        setGalleries((current) =>
+          current.map((item) =>
+            item.identifier === updated.identifier ? updated : item,
+          ),
+        );
+        return updated;
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [profile.address, profile.name],
+  );
+
   const likeGallery = useCallback(
     async (gallery) => {
       if (!profile.name || !profile.address) {
@@ -119,6 +148,7 @@ export const useGalleries = () => {
     hasNextPage,
     isLoading,
     isPublishing,
+    isUpdating,
     likeCounts,
     likeGallery,
     loadGalleries,
@@ -128,5 +158,6 @@ export const useGalleries = () => {
     setPage,
     setSortOrder,
     sortOrder,
+    updateExistingGallery,
   };
 };

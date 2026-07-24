@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus } from 'react-icons/fa';
+import { FaEdit, FaPlus } from 'react-icons/fa';
 import GalleryCard from '../../components/gallery/GalleryCard';
 import GalleryPublishModal from '../../components/gallery/GalleryPublishModal';
 import VideoCommentsModal from '../../components/videos/VideoCommentsModal';
@@ -14,6 +14,7 @@ import styles from './GalleryPage.module.css';
 function GalleryPage() {
   const navigate = useNavigate();
   const [isPublishOpen, setIsPublishOpen] = useState(false);
+  const [editGallery, setEditGallery] = useState(null);
   const [toast, setToast] = useState('');
   const {
     error,
@@ -21,6 +22,7 @@ function GalleryPage() {
     hasNextPage,
     isLoading,
     isPublishing,
+    isUpdating,
     likeCounts,
     likeGallery,
     page,
@@ -29,6 +31,7 @@ function GalleryPage() {
     setPage,
     setSortOrder,
     sortOrder,
+    updateExistingGallery,
   } = useGalleries();
 
   const notify = (message) => {
@@ -45,8 +48,25 @@ function GalleryPage() {
   };
 
   const handlePublish = async (form) => {
-    await publishNewGallery(form);
-    notify('Gallery published successfully.');
+    if (editGallery) {
+      await updateExistingGallery(editGallery, form);
+      notify('Gallery updated successfully.');
+      setEditGallery(null);
+    } else {
+      await publishNewGallery(form);
+      notify('Gallery published successfully.');
+    }
+  };
+
+  const openEditModal = (gallery, event) => {
+    event.stopPropagation();
+    setEditGallery(gallery);
+    setIsPublishOpen(true);
+  };
+
+  const closePublishModal = () => {
+    setIsPublishOpen(false);
+    setEditGallery(null);
   };
 
   const handleShare = async (gallery) => {
@@ -108,10 +128,12 @@ function GalleryPage() {
         <div className={styles.grid}>
           {galleries.map((gallery) => (
             <GalleryCard
+              canEdit={canPublishGalleries}
               gallery={gallery}
               key={gallery.identifier}
               likeCount={likeCounts[gallery.identifier] || 0}
               onComment={comments.openComments}
+              onEdit={openEditModal}
               onLike={handleLike}
               onOpen={openGalleryDetail}
               onShare={handleShare}
@@ -132,9 +154,10 @@ function GalleryPage() {
       </div>
 
       <GalleryPublishModal
+        editGallery={editGallery}
         isOpen={canPublishGalleries && isPublishOpen}
-        isPublishing={isPublishing}
-        onClose={() => setIsPublishOpen(false)}
+        isPublishing={isPublishing || isUpdating}
+        onClose={closePublishModal}
         onPublish={handlePublish}
       />
 

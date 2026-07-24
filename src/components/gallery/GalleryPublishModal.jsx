@@ -19,13 +19,16 @@ const toEditForm = (gallery) => ({
   images: [],
 });
 
-const buildNewImageRows = (files) =>
-  files.slice(0, 10).map((file) => ({
+const buildNewImageRows = (files) => {
+  const fileArray = Array.isArray(files) ? files : Array.from(files || []);
+  return fileArray.slice(0, 10).map((file) => ({
     id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
     file,
+    title: '',
     description: '',
     previewUrl: URL.createObjectURL(file),
   }));
+};
 
 function GalleryPublishModal({
   editGallery,
@@ -44,9 +47,10 @@ function GalleryPublishModal({
     setError('');
   }, [editGallery, isOpen]);
 
+  const totalExistingImages = useMemo(() => form.existingImages.length, [form.existingImages.length]);
   const totalNewImages = useMemo(() => form.images.length, [form.images.length]);
-
-  if (!isOpen) return null;
+  const totalImages = totalExistingImages + totalNewImages;
+  const canAddMoreImages = totalImages < 10;
 
   const updateField = (field, value) => {
     setForm((current) => ({
@@ -93,11 +97,29 @@ function GalleryPublishModal({
     });
   };
 
+  const updateExistingImageTitle = (imageId, title) => {
+    setForm((current) => ({
+      ...current,
+      existingImages: current.existingImages.map((image) =>
+        image.id === imageId ? { ...image, title } : image,
+      ),
+    }));
+  };
+
   const updateExistingImageDescription = (imageId, description) => {
     setForm((current) => ({
       ...current,
       existingImages: current.existingImages.map((image) =>
         image.id === imageId ? { ...image, description } : image,
+      ),
+    }));
+  };
+
+  const updateNewImageTitle = (imageId, title) => {
+    setForm((current) => ({
+      ...current,
+      images: current.images.map((image) =>
+        image.id === imageId ? { ...image, title } : image,
       ),
     }));
   };
@@ -111,10 +133,14 @@ function GalleryPublishModal({
     }));
   };
 
-  const addImages = (files) => {
+  const addImages = (fileList) => {
+    const files = Array.isArray(fileList) ? fileList : Array.from(fileList || []);
+    if (files.length === 0) return;
+
     setForm((current) => {
-      const availableSlots = Math.max(0, 10 - current.images.length);
-      const rows = buildNewImageRows(Array.from(files).slice(0, availableSlots));
+      const availableSlots = Math.max(0, 10 - current.existingImages.length - current.images.length);
+      if (availableSlots === 0) return current;
+      const rows = buildNewImageRows(files.slice(0, availableSlots));
       return {
         ...current,
         images: [...current.images, ...rows],
@@ -140,6 +166,8 @@ function GalleryPublishModal({
     form.images.forEach((image) => URL.revokeObjectURL(image.previewUrl));
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className={styles.overlay} role="dialog" aria-modal="true">
@@ -190,29 +218,40 @@ function GalleryPublishModal({
               type="file"
               accept="image/*"
               multiple
+              disabled={!canAddMoreImages}
               onChange={(event) => {
                 addImages(event.target.files || []);
                 event.target.value = '';
               }}
             />
             <span className={styles.fieldHint}>
-              Select up to 10 new images per publish action. Existing images can be reordered below.
+              Select up to {Math.max(0, 10 - totalImages)} more image{10 - totalImages !== 1 ? 's' : ''}. Maximum 10 images total per gallery.
             </span>
           </label>
 
           {form.existingImages.length > 0 && (
             <div className={styles.imageRows}>
-              <h3>Existing images</h3>
+              <h3>Existing images ({totalExistingImages})</h3>
               {form.existingImages.map((image, index) => (
                 <div key={image.id} className={styles.imageRow}>
                   <img src={image.thumbnailUrl || image.src} alt="" />
-                  <textarea
-                    value={image.description}
-                    onChange={(event) =>
-                      updateExistingImageDescription(image.id, event.target.value)
-                    }
-                    placeholder="Image description"
-                  />
+                  <div className={styles.imageFields}>
+                    <input
+                      type="text"
+                      value={image.title || ''}
+                      onChange={(event) =>
+                        updateExistingImageTitle(image.id, event.target.value)
+                      }
+                      placeholder="Image title (optional)"
+                    />
+                    <textarea
+                      value={image.description || ''}
+                      onChange={(event) =>
+                        updateExistingImageDescription(image.id, event.target.value)
+                      }
+                      placeholder="Image description (optional)"
+                    />
+                  </div>
                   <div className={styles.rowActions}>
                     <button type="button" onClick={() => moveExistingImage(index, -1)}>
                       <FaArrowUp />
@@ -231,15 +270,27 @@ function GalleryPublishModal({
 
           {form.images.length > 0 && (
             <div className={styles.imageRows}>
-              <h3>New images ({totalNewImages}/10)</h3>
+              <h3>New images ({totalNewImages}/10 total: {totalImages})</h3>
               {form.images.map((image, index) => (
                 <div key={image.id} className={styles.imageRow}>
                   <img src={image.previewUrl} alt="" />
-                  <textarea
-                    value={image.description}
-                    onChange={(event) => updateNewImageDescription(image.id, event.target.value)}
-                    placeholder="Image description"
-                  />
+                  <div className={styles.imageFields}>
+                    <input
+                      type="text"
+                      value={image.title || ''}
+                      onChange={(event) =>
+                        updateNewImageTitle(image.id, event.target.value)
+                      }
+                      placeholder="Image title (optional)"
+                    />
+                    <textarea
+                      value={image.description || ''}
+                      onChange={(event) =>
+                        updateNewImageDescription(image.id, event.target.value)
+                      }
+                      placeholder="Image description (optional)"
+                    />
+                  </div>
                   <div className={styles.rowActions}>
                     <button type="button" onClick={() => moveNewImage(index, -1)}>
                       <FaArrowUp />

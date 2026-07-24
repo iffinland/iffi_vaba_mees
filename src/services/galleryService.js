@@ -193,7 +193,7 @@ const publishThumbnail = async ({ file, identifier, authorName, title }) => {
   };
 };
 
-const publishImage = async ({ file, index, authorName, title }) => {
+const publishImage = async ({ file, index, authorName, title, imageTitle }) => {
   if (!file?.type?.startsWith('image/')) {
     throw new Error('Gallery images must be image files.');
   }
@@ -208,7 +208,7 @@ const publishImage = async ({ file, index, authorName, title }) => {
     data64,
     encoding: 'base64',
     filename: file.name || `${imageId}.jpg`,
-    title: title || 'Gallery image',
+    title: imageTitle || title || 'Gallery image',
     description: `Image for ${title || 'gallery'}`.slice(0, 4000),
   });
 
@@ -408,8 +408,8 @@ export const publishGallery = async ({ form, authorName, authorAddress }) => {
   return gallery;
 };
 
-export const updateGallery = async ({ gallery, form, authorName }) => {
-  if (!isOwnerProfile({ name: authorName })) {
+export const updateGallery = async ({ gallery, form, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
     throw new Error('Only the site owner can edit galleries.');
   }
 
@@ -428,6 +428,7 @@ export const updateGallery = async ({ gallery, form, authorName }) => {
 
   const existingImages = form.existingImages.map((image, index) => ({
     ...image,
+    title: image.title || '',
     description: image.description || '',
     order: index,
   }));
@@ -443,6 +444,7 @@ export const updateGallery = async ({ gallery, form, authorName }) => {
     });
     newImages.push({
       ...image,
+      title: row.title || '',
       description: row.description || '',
       order: existingImages.length + index,
     });
