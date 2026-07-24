@@ -158,6 +158,7 @@ export const useVideos = () => {
           video,
           descriptionHtml,
           authorName: profile.name,
+          authorAddress: profile.address,
         });
         setVideos((current) =>
           current.map((item) =>

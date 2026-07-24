@@ -1,10 +1,10 @@
 import {
   createShortId,
   encodeObjectToBase64,
-  fileToBase64,
   getSelectedQortiumProfile,
   requestQortium,
   sanitizeIdentifierSegment,
+  selectQdnPublishSource,
 } from './qortium/qortiumClient';
 import { getQdnResourceUrl } from './qdnResourceService';
 import { isOwnerName, isOwnerProfile, OWNER_QORTIUM_NAME } from '../utils/siteConfig';
@@ -18,6 +18,8 @@ const MAX_QDN_THUMBNAIL_BYTES = 500000;
 const THUMBNAIL_CANVAS_MAX_SIZE = 1280;
 const MAX_QDN_METADATA_TITLE_LENGTH = 80;
 const MAX_QDN_METADATA_DESCRIPTION_LENGTH = 240;
+const MAX_VIDEO_UPLOAD_BYTES = 1 * 1024 * 1024 * 1024; // 1 GB desired application limit
+const MAX_VIDEO_SOURCE_BYTES = 100 * 1024 * 1024; // 100 MiB current Qortium Home platform limit
 
 const loadImageFile = (file) =>
   new Promise((resolve, reject) => {
@@ -306,27 +308,44 @@ export const fetchVideoPage = async ({
     };
   }
 
-  const summaries = await fetchSummaries({
-    limit: pageSize,
-    offset,
-    sortOrder,
-  });
-
-  const pageItems = Array.isArray(summaries) ? summaries : [];
   const videos = [];
+  let ownerVideoCount = 0;
+  let qdnOffset = 0;
+  let hasMoreResults = true;
+  const scanLimit = 50;
 
-  for (const summary of pageItems) {
-    try {
-      const video = await fetchVideoFromSummary(summary);
-      if (video) videos.push(video);
-    } catch (error) {
-      console.error('Failed to fetch video metadata', summary?.identifier, error);
+  while (hasMoreResults && videos.length < pageSize + 1) {
+    const scanSummaries = await fetchSummaries({
+      limit: scanLimit,
+      offset: qdnOffset,
+      sortOrder,
+    });
+    const scanItems = Array.isArray(scanSummaries) ? scanSummaries : [];
+    if (!scanItems.length) break;
+
+    for (const summary of scanItems) {
+      try {
+        const video = await fetchVideoFromSummary(summary);
+        if (!video) continue;
+
+        if (ownerVideoCount >= offset) {
+          videos.push(video);
+        }
+        ownerVideoCount += 1;
+
+        if (videos.length >= pageSize + 1) break;
+      } catch (error) {
+        console.error('Failed to fetch video metadata', summary?.identifier, error);
+      }
     }
+
+    hasMoreResults = scanItems.length === scanLimit;
+    qdnOffset += scanItems.length;
   }
 
   return {
-    videos,
-    hasNextPage: pageItems.length === pageSize,
+    videos: videos.slice(0, pageSize),
+    hasNextPage: videos.length > pageSize,
   };
 };
 
@@ -418,16 +437,24 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
     title: form.title,
   });
 
-  if (form.sourceType === 'upload' && form.videoFile) {
-    const data64 = await fileToBase64(form.videoFile);
+  if (form.sourceType === 'upload') {
+    const source = await selectQdnPublishSource();
+
+    if (source.size > MAX_VIDEO_SOURCE_BYTES) {
+      const sizeMB = (source.size / (1024 * 1024)).toFixed(0);
+      throw new Error(
+        `The selected file is ${sizeMB} MB. Qortium Home currently supports video uploads up to 100 MB. ` +
+          'The app will support up to 1 GB when Home increases its source file limit.',
+      );
+    }
+
     const videoResponse = await requestQortium({
       action: 'PUBLISH_QDN_RESOURCE',
       name: OWNER_QORTIUM_NAME,
       service: 'VIDEO',
       identifier,
-      data64,
-      encoding: 'base64',
-      filename: form.videoFile.name || `${identifier}.mp4`,
+      sourceToken: source.sourceToken,
+      filename: source.fileName || `${identifier}.mp4`,
       title: toQdnTitle(form.title, 'Untitled video'),
       description: toQdnDescription(toPlainText(form.descriptionHtml), 'Uploaded video'),
     });
@@ -436,7 +463,7 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
       service: 'VIDEO',
       name: videoResponse?.name || OWNER_QORTIUM_NAME,
       identifier: videoResponse?.identifier || identifier,
-      filename: form.videoFile.name || '',
+      filename: source.fileName || '',
     };
   }
 
@@ -474,8 +501,8 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
   return payload;
 };
 
-export const updateVideo = async ({ video, form, authorName }) => {
-  if (!isOwnerProfile({ name: authorName })) {
+export const updateVideo = async ({ video, form, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
     throw new Error('Only the site owner can edit videos.');
   }
 
@@ -495,16 +522,24 @@ export const updateVideo = async ({ video, form, authorName }) => {
     thumbnailUrl = thumbnail.thumbnailUrl || thumbnailUrl;
   }
 
-  if (nextSourceType === 'upload' && form.videoFile) {
-    const data64 = await fileToBase64(form.videoFile);
+  if (nextSourceType === 'upload') {
+    const source = await selectQdnPublishSource();
+
+    if (source.size > MAX_VIDEO_SOURCE_BYTES) {
+      const sizeMB = (source.size / (1024 * 1024)).toFixed(0);
+      throw new Error(
+        `The selected file is ${sizeMB} MB. Qortium Home currently supports video uploads up to 100 MB. ` +
+          'The app will support up to 1 GB when Home increases its source file limit.',
+      );
+    }
+
     const videoResponse = await requestQortium({
       action: 'PUBLISH_QDN_RESOURCE',
       name: OWNER_QORTIUM_NAME,
       service: 'VIDEO',
       identifier: video.identifier,
-      data64,
-      encoding: 'base64',
-      filename: form.videoFile.name || `${video.identifier}.mp4`,
+      sourceToken: source.sourceToken,
+      filename: source.fileName || video.qdnVideo?.filename || '',
       title: toQdnTitle(form.title || video.title, 'Untitled video'),
       description: toQdnDescription(
         toPlainText(form.descriptionHtml ?? video.descriptionHtml),
@@ -514,9 +549,9 @@ export const updateVideo = async ({ video, form, authorName }) => {
 
     qdnVideo = {
       service: 'VIDEO',
-      name: videoResponse?.name || authorName,
+      name: videoResponse?.name || OWNER_QORTIUM_NAME,
       identifier: videoResponse?.identifier || video.identifier,
-      filename: form.videoFile.name || video.qdnVideo?.filename || '',
+      filename: source.fileName || video.qdnVideo?.filename || '',
     };
   }
 
@@ -550,8 +585,8 @@ export const updateVideo = async ({ video, form, authorName }) => {
   return updatedVideo;
 };
 
-export const updateVideoDescription = async ({ video, descriptionHtml, authorName }) => {
-  if (!isOwnerProfile({ name: authorName })) {
+export const updateVideoDescription = async ({ video, descriptionHtml, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
     throw new Error('Only the site owner can edit video descriptions.');
   }
 
