@@ -7,6 +7,7 @@ import {
   sanitizeIdentifierSegment,
 } from './qortium/qortiumClient';
 import { getQdnResourceUrl } from './qdnResourceService';
+import { isOwnerName, isOwnerProfile, OWNER_QORTIUM_NAME } from '../utils/siteConfig';
 
 export const VIDEO_METADATA_PREFIX = 'iffivabamees_video_';
 const VIDEO_SERVICE = 'DOCUMENT';
@@ -129,6 +130,13 @@ export const sanitizeVideoPayload = (payload = {}, summary = {}) => {
     return null;
   }
 
+  const resourceOwnerName = typeof summary.name === 'string' ? summary.name : payload.authorName;
+  const resourceOwnerAddress =
+    typeof summary.address === 'string' ? summary.address : payload.authorAddress;
+  if (!isOwnerProfile({ name: resourceOwnerName, address: resourceOwnerAddress })) {
+    return null;
+  }
+
   const title = typeof payload.title === 'string' ? payload.title.trim() : '';
   const descriptionHtml =
     typeof payload.descriptionHtml === 'string' ? payload.descriptionHtml : '';
@@ -191,6 +199,8 @@ const fetchSummaries = async ({ limit, offset, sortOrder }) =>
   });
 
 const fetchVideoFromSummary = async (summary) => {
+  if (!isOwnerName(summary?.name)) return null;
+
   const resource = await requestQortium({
     action: 'FETCH_QDN_RESOURCE',
     service: VIDEO_SERVICE,
@@ -231,12 +241,14 @@ export const fetchVideoByIdentifier = async (identifier) => {
     exactMatchNames: false,
   });
 
-  const summary = Array.isArray(summaries) ? summaries[0] : null;
-  if (!summary) {
+  const ownerSummary = Array.isArray(summaries)
+    ? summaries.find((summary) => summary.identifier === identifier && isOwnerName(summary.name))
+    : null;
+  if (!ownerSummary) {
     return null;
   }
 
-  return fetchVideoFromSummary(summary);
+  return fetchVideoFromSummary(ownerSummary);
 };
 
 export const fetchVideoPage = async ({
@@ -392,13 +404,17 @@ const publishVideoThumbnail = async ({ file, identifier, authorName, title }) =>
 };
 
 export const publishVideo = async ({ form, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
+    throw new Error('Only the site owner can publish videos.');
+  }
+
   const now = Date.now();
   const identifier = buildVideoIdentifier({ title: form.title, authorName });
   let qdnVideo = null;
   const thumbnail = await publishVideoThumbnail({
     file: form.thumbnailFile,
     identifier,
-    authorName,
+    authorName: OWNER_QORTIUM_NAME,
     title: form.title,
   });
 
@@ -406,7 +422,7 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
     const data64 = await fileToBase64(form.videoFile);
     const videoResponse = await requestQortium({
       action: 'PUBLISH_QDN_RESOURCE',
-      name: authorName,
+      name: OWNER_QORTIUM_NAME,
       service: 'VIDEO',
       identifier,
       data64,
@@ -418,7 +434,7 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
 
     qdnVideo = {
       service: 'VIDEO',
-      name: videoResponse?.name || authorName,
+      name: videoResponse?.name || OWNER_QORTIUM_NAME,
       identifier: videoResponse?.identifier || identifier,
       filename: form.videoFile.name || '',
     };
@@ -446,7 +462,7 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
 
   await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
-    name: authorName,
+    name: OWNER_QORTIUM_NAME,
     service: VIDEO_SERVICE,
     identifier,
     data64: encodeObjectToBase64(payload),
@@ -459,6 +475,10 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
 };
 
 export const updateVideo = async ({ video, form, authorName }) => {
+  if (!isOwnerProfile({ name: authorName })) {
+    throw new Error('Only the site owner can edit videos.');
+  }
+
   let qdnVideo = video.qdnVideo || null;
   let qdnThumbnail = video.qdnThumbnail || null;
   let thumbnailUrl = video.thumbnailUrl || '';
@@ -468,7 +488,7 @@ export const updateVideo = async ({ video, form, authorName }) => {
     const thumbnail = await publishVideoThumbnail({
       file: form.thumbnailFile,
       identifier: video.identifier,
-      authorName,
+      authorName: OWNER_QORTIUM_NAME,
       title: form.title || video.title,
     });
     qdnThumbnail = thumbnail.qdnThumbnail || qdnThumbnail;
@@ -479,7 +499,7 @@ export const updateVideo = async ({ video, form, authorName }) => {
     const data64 = await fileToBase64(form.videoFile);
     const videoResponse = await requestQortium({
       action: 'PUBLISH_QDN_RESOURCE',
-      name: authorName,
+      name: OWNER_QORTIUM_NAME,
       service: 'VIDEO',
       identifier: video.identifier,
       data64,
@@ -518,7 +538,7 @@ export const updateVideo = async ({ video, form, authorName }) => {
 
   await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
-    name: authorName,
+    name: OWNER_QORTIUM_NAME,
     service: VIDEO_SERVICE,
     identifier: updatedVideo.identifier,
     data64: encodeObjectToBase64(updatedVideo),
@@ -531,6 +551,10 @@ export const updateVideo = async ({ video, form, authorName }) => {
 };
 
 export const updateVideoDescription = async ({ video, descriptionHtml, authorName }) => {
+  if (!isOwnerProfile({ name: authorName })) {
+    throw new Error('Only the site owner can edit video descriptions.');
+  }
+
   const updatedVideo = sanitizeVideoPayload({
     ...video,
     descriptionHtml,
@@ -540,7 +564,7 @@ export const updateVideoDescription = async ({ video, descriptionHtml, authorNam
 
   await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
-    name: authorName,
+    name: OWNER_QORTIUM_NAME,
     service: VIDEO_SERVICE,
     identifier: updatedVideo.identifier,
     data64: encodeObjectToBase64(updatedVideo),

@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './GuestbookPage.module.css';
 import {
-  fetchGuestbookEntries,
+  fetchGuestbookPage,
   getCurrentUserProfile,
   publishGuestbookEntry,
 } from '../../services/guestbookService';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 const formatTimestamp = (value) => {
   if (!value) return '';
@@ -19,37 +19,47 @@ const formatTimestamp = (value) => {
 
 function GuestbookPage() {
   const [entries, setEntries] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState('');
-  const [page, setPage] = useState(1);
-  const [sortOrder, setSortOrder] = useState('newest');
+  const [hasMore, setHasMore] = useState(false);
+  const [nextOffset, setNextOffset] = useState(0);
+  const [isExhausted, setIsExhausted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [userProfile, setUserProfile] = useState({ address: '', name: '', names: [] });
   const [editingEntry, setEditingEntry] = useState(null);
+  const hasRequestedInitialLoad = useRef(false);
+
+  const loadFirstPage = useCallback(async () => {
+    if (hasRequestedInitialLoad.current) return;
+    hasRequestedInitialLoad.current = true;
+
+    setIsInitialLoading(true);
+    setError('');
+
+    try {
+      const result = await fetchGuestbookPage({ pageSize: PAGE_SIZE, offset: 0 });
+      setEntries(result.entries);
+      setHasMore(result.hasMore);
+      setNextOffset(result.nextOffset);
+      setIsExhausted(result.exhausted && !result.hasMore);
+    } catch (err) {
+      console.error(err);
+      setError(
+        err?.message ||
+          'Unable to load guestbook entries. Please ensure Qortium Home is open.',
+      );
+    } finally {
+      setIsInitialLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadEntries = async () => {
-      setIsLoading(true);
-      setError('');
-      try {
-        const data = await fetchGuestbookEntries();
-        setEntries(data);
-      } catch (err) {
-        console.error(err);
-        setError(
-          err?.message ||
-            'Unable to load guestbook entries. Please ensure Qortium Home is open.',
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadEntries();
-  }, []);
+    loadFirstPage();
+  }, [loadFirstPage]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -64,29 +74,31 @@ function GuestbookPage() {
     loadProfile();
   }, []);
 
-  useEffect(() => {
-    setPage(1);
-  }, [sortOrder]);
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || isExhausted) return;
 
-  const sortedEntries = useMemo(() => {
-    const list = [...entries];
-    return list.sort((a, b) => {
-      const aTimestamp = a.updated ?? a.created ?? 0;
-      const bTimestamp = b.updated ?? b.created ?? 0;
-      return sortOrder === 'newest' ? bTimestamp - aTimestamp : aTimestamp - bTimestamp;
-    });
-  }, [entries, sortOrder]);
+    setIsLoadingMore(true);
+    setError('');
 
-  const totalPages = Math.max(1, Math.ceil(sortedEntries.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const paginatedEntries = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return sortedEntries.slice(start, start + PAGE_SIZE);
-  }, [currentPage, sortedEntries]);
-
-  useEffect(() => {
-    setPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
+    try {
+      const result = await fetchGuestbookPage({ pageSize: PAGE_SIZE, offset: nextOffset });
+      setEntries((current) => {
+        const existingIds = new Set(current.map((entry) => entry.identifier));
+        const newUnique = result.entries.filter(
+          (entry) => !existingIds.has(entry.identifier),
+        );
+        return [...current, ...newUnique];
+      });
+      setHasMore(result.hasMore);
+      setNextOffset(result.nextOffset);
+      setIsExhausted(result.exhausted && !result.hasMore);
+    } catch (err) {
+      console.error(err);
+      setError(err?.message || 'Unable to load more entries.');
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, isExhausted, nextOffset]);
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -142,7 +154,7 @@ function GuestbookPage() {
 
       setEntries((prev) => {
         const filtered = prev.filter((entry) => entry.identifier !== savedEntry.identifier);
-        return [...filtered, savedEntry];
+        return [savedEntry, ...filtered];
       });
 
       closeModal();
@@ -172,17 +184,6 @@ function GuestbookPage() {
           </p>
         </div>
         <div className={styles.actions}>
-          <label className={styles.sortControl}>
-            Sort
-            <select
-              value={sortOrder}
-              onChange={(event) => setSortOrder(event.target.value)}
-              className={styles.sortSelect}
-            >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-            </select>
-          </label>
           <button type="button" className={styles.primaryButton} onClick={openCreateModal}>
             Write in the guestbook
           </button>
@@ -191,14 +192,14 @@ function GuestbookPage() {
 
       {error && <p className={styles.error}>{error}</p>}
 
-      {isLoading ? (
+      {isInitialLoading ? (
         <p className={styles.statusMessage}>Loading entries...</p>
-      ) : paginatedEntries.length === 0 ? (
+      ) : entries.length === 0 ? (
         <p className={styles.statusMessage}>No entries published yet. Be the first!</p>
       ) : (
         <>
           <div className={styles.entries}>
-            {paginatedEntries.map((entry) => (
+            {entries.map((entry) => (
               <div key={entry.id} className={styles.entry}>
                 <div className={styles.entryHeader}>
                   <div>
@@ -221,26 +222,20 @@ function GuestbookPage() {
               </div>
             ))}
           </div>
-          {totalPages > 1 && (
-            <div className={styles.pagination}>
+          {hasMore && (
+            <div className={styles.loadMore}>
               <button
                 type="button"
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
+                className={styles.secondaryButton}
+                onClick={loadMore}
+                disabled={isLoadingMore}
               >
-                Previous
-              </button>
-              <span>
-                Page {currentPage} / {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Next
+                {isLoadingMore ? 'Loading...' : 'Load older entries'}
               </button>
             </div>
+          )}
+          {isExhausted && entries.length > PAGE_SIZE && (
+            <p className={styles.statusMessage}>All entries loaded.</p>
           )}
         </>
       )}

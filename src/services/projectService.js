@@ -366,7 +366,7 @@ export const publishProject = async ({ form, authorName, authorAddress }) => {
   const cover = await publishCover({
     file: form.coverFile,
     identifier,
-    authorName,
+    authorName: OWNER_QORTIUM_NAME,
     title: form.title,
   });
 
@@ -392,7 +392,7 @@ export const publishProject = async ({ form, authorName, authorAddress }) => {
       created: now,
       updated: now,
     },
-    { name: authorName, address: authorAddress, identifier, created: now, updated: now },
+    { name: OWNER_QORTIUM_NAME, address: authorAddress, identifier, created: now, updated: now },
   );
 
   if (!payload) {
@@ -401,7 +401,7 @@ export const publishProject = async ({ form, authorName, authorAddress }) => {
 
   await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
-    name: authorName,
+    name: OWNER_QORTIUM_NAME,
     service: PROJECT_SERVICE,
     identifier,
     data64: encodeObjectToBase64(payload),
@@ -425,7 +425,7 @@ export const updateProject = async ({ project, form, authorName, authorAddress }
     const cover = await publishCover({
       file: form.coverFile,
       identifier: project.identifier,
-      authorName,
+      authorName: OWNER_QORTIUM_NAME,
       title: form.title || project.title,
     });
     coverResource = cover.coverResource || coverResource;
@@ -450,7 +450,7 @@ export const updateProject = async ({ project, form, authorName, authorAddress }
       coverUrl,
       updated: Date.now(),
     },
-    { name: authorName, address: authorAddress, identifier: project.identifier },
+    { name: OWNER_QORTIUM_NAME, address: authorAddress, identifier: project.identifier },
   );
 
   if (!updatedProject) {
@@ -459,7 +459,7 @@ export const updateProject = async ({ project, form, authorName, authorAddress }
 
   await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
-    name: authorName,
+    name: OWNER_QORTIUM_NAME,
     service: PROJECT_SERVICE,
     identifier: updatedProject.identifier,
     data64: encodeObjectToBase64(updatedProject),

@@ -6,6 +6,7 @@ import {
   sanitizeIdentifierSegment,
 } from './qortium/qortiumClient';
 import { getQdnResourceUrl } from './qdnResourceService';
+import { isOwnerName, isOwnerProfile, OWNER_QORTIUM_NAME } from '../utils/siteConfig';
 import { getCurrentUserProfile } from './videoService';
 
 export { getCurrentUserProfile };
@@ -115,6 +116,13 @@ const resolveResourceUrl = async (resource) => {
 const sanitizeGalleryPayload = (payload = {}, summary = {}) => {
   const identifier = payload.identifier || summary.identifier;
   if (!identifier || !String(identifier).startsWith(GALLERY_METADATA_PREFIX)) {
+    return null;
+  }
+
+  const resourceOwnerName = typeof summary.name === 'string' ? summary.name : payload.authorName;
+  const resourceOwnerAddress =
+    typeof summary.address === 'string' ? summary.address : payload.authorAddress;
+  if (!isOwnerProfile({ name: resourceOwnerName, address: resourceOwnerAddress })) {
     return null;
   }
 
@@ -273,6 +281,8 @@ const resolveGalleryUrls = async (gallery, includeImages = false) => {
 };
 
 const fetchGalleryFromSummary = async (summary, includeImages = false) => {
+  if (!isOwnerName(summary?.name)) return null;
+
   const resource = await requestQortium({
     action: 'FETCH_QDN_RESOURCE',
     service: GALLERY_SERVICE,
@@ -336,13 +346,19 @@ export const fetchGalleryByIdentifier = async (identifier) => {
     exactMatchNames: false,
   });
 
-  const summary = Array.isArray(summaries) ? summaries[0] : null;
-  if (!summary) return null;
+  const ownerSummary = Array.isArray(summaries)
+    ? summaries.find((summary) => summary.identifier === identifier && isOwnerName(summary.name))
+    : null;
+  if (!ownerSummary) return null;
 
-  return fetchGalleryFromSummary(summary, true);
+  return fetchGalleryFromSummary(ownerSummary, true);
 };
 
 export const publishGallery = async ({ form, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
+    throw new Error('Only the site owner can publish galleries.');
+  }
+
   const now = Date.now();
   const identifier = buildGalleryIdentifier({ title: form.title, authorName });
   const imageRows = form.images.slice(0, 10);
@@ -353,7 +369,7 @@ export const publishGallery = async ({ form, authorName, authorAddress }) => {
     const image = await publishImage({
       file: row.file,
       index,
-      authorName,
+      authorName: OWNER_QORTIUM_NAME,
       title: form.title,
     });
     images.push({
@@ -366,7 +382,7 @@ export const publishGallery = async ({ form, authorName, authorAddress }) => {
   let coverResource = await publishThumbnail({
     file: form.coverFile,
     identifier: `${identifier}_c`,
-    authorName,
+    authorName: OWNER_QORTIUM_NAME,
     title: form.title,
   });
   if (!coverResource && images[0]?.thumbnailResource) {
@@ -388,11 +404,15 @@ export const publishGallery = async ({ form, authorName, authorAddress }) => {
     updated: now,
   });
 
-  await publishGalleryMetadata({ gallery, authorName });
+  await publishGalleryMetadata({ gallery, authorName: OWNER_QORTIUM_NAME });
   return gallery;
 };
 
 export const updateGallery = async ({ gallery, form, authorName }) => {
+  if (!isOwnerProfile({ name: authorName })) {
+    throw new Error('Only the site owner can edit galleries.');
+  }
+
   let coverResource = gallery.coverResource || null;
   let coverUrl = gallery.coverUrl || '';
 
@@ -400,7 +420,7 @@ export const updateGallery = async ({ gallery, form, authorName }) => {
     coverResource = await publishThumbnail({
       file: form.coverFile,
       identifier: `${gallery.identifier}_c`,
-      authorName,
+      authorName: OWNER_QORTIUM_NAME,
       title: form.title || gallery.title,
     });
     coverUrl = await resolveResourceUrl(coverResource);
@@ -418,7 +438,7 @@ export const updateGallery = async ({ gallery, form, authorName }) => {
     const image = await publishImage({
       file: row.file,
       index: existingImages.length + index,
-      authorName,
+      authorName: OWNER_QORTIUM_NAME,
       title: form.title || gallery.title,
     });
     newImages.push({
@@ -449,7 +469,7 @@ export const updateGallery = async ({ gallery, form, authorName }) => {
     updated: Date.now(),
   });
 
-  await publishGalleryMetadata({ gallery: updatedGallery, authorName });
+  await publishGalleryMetadata({ gallery: updatedGallery, authorName: OWNER_QORTIUM_NAME });
   return updatedGallery;
 };
 

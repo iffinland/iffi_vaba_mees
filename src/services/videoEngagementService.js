@@ -211,10 +211,17 @@ export const resolveNameAddress = async (name) => {
   return response?.owner || '';
 };
 
-export const sendQortTip = async ({ recipient, amount }) =>
-  requestQortium({
+export const sendQortTip = async ({ recipient, amount }) => {
+  const response = await requestQortium({
     action: 'SEND_COIN',
     coin: 'QORT',
     recipient,
     amount,
   });
+
+  if (!response?.signature) {
+    throw new Error('Tip transfer failed: no transaction signature was returned.');
+  }
+
+  return response;
+};

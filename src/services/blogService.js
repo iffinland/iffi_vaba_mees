@@ -422,7 +422,7 @@ export const publishBlogPost = async ({ form, authorName, authorAddress }) => {
   const cover = await publishCover({
     file: form.coverFile,
     identifier,
-    authorName,
+    authorName: OWNER_QORTIUM_NAME,
     title: form.title,
   });
 
@@ -444,7 +444,7 @@ export const publishBlogPost = async ({ form, authorName, authorAddress }) => {
       created: now,
       updated: now,
     },
-    { name: authorName, address: authorAddress, identifier, created: now, updated: now },
+    { name: OWNER_QORTIUM_NAME, address: authorAddress, identifier, created: now, updated: now },
   );
 
   if (!payload) {
@@ -453,7 +453,7 @@ export const publishBlogPost = async ({ form, authorName, authorAddress }) => {
 
   await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
-    name: authorName,
+    name: OWNER_QORTIUM_NAME,
     service: BLOG_SERVICE,
     identifier,
     data64: encodeObjectToBase64(payload),
@@ -498,7 +498,7 @@ export const updateBlogPost = async ({ post, form, authorName, authorAddress }) 
       coverUrl,
       updated: Date.now(),
     },
-    { name: authorName, address: authorAddress, identifier: post.identifier },
+    { name: OWNER_QORTIUM_NAME, address: authorAddress, identifier: post.identifier },
   );
 
   if (!updatedPost) {
@@ -507,7 +507,7 @@ export const updateBlogPost = async ({ post, form, authorName, authorAddress }) 
 
   await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
-    name: authorName,
+    name: OWNER_QORTIUM_NAME,
     service: BLOG_SERVICE,
     identifier: updatedPost.identifier,
     data64: encodeObjectToBase64(updatedPost),

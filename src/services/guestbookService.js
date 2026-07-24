@@ -60,45 +60,27 @@ const sanitizeEntry = (payload = {}, summary = {}) => {
   };
 };
 
-const fetchSummaries = async () => {
-  const aggregated = [];
-  let offset = 0;
-
-  while (true) {
-    const page = await requestQortium({
-      action: 'SEARCH_QDN_RESOURCES',
-      service: ENTRY_SERVICE,
-      mode: 'ALL',
-      identifier: ENTRY_IDENTIFIER_PREFIX,
-      prefix: true,
-      limit: SEARCH_PAGE_SIZE,
-      offset,
-      reverse: true,
-      includeStatus: true,
-      excludeBlocked: true,
-      exactMatchNames: false,
-    });
-
-    if (Array.isArray(page)) {
-      aggregated.push(...page);
-      if (page.length < SEARCH_PAGE_SIZE) {
-        break;
-      }
-      offset += page.length;
-    } else {
-      break;
-    }
-  }
-
-  return aggregated;
-};
-
-export const fetchGuestbookEntries = async () => {
-  const summaries = await fetchSummaries();
-
+export const fetchGuestbookPage = async ({ pageSize = 10, offset = 0 } = {}) => {
+  const targetCount = pageSize + 1;
   const entries = [];
 
-  for (const summary of summaries) {
+  const summaries = await requestQortium({
+    action: 'SEARCH_QDN_RESOURCES',
+    service: ENTRY_SERVICE,
+    mode: 'ALL',
+    identifier: ENTRY_IDENTIFIER_PREFIX,
+    prefix: true,
+    limit: Math.min(targetCount + 4, SEARCH_PAGE_SIZE),
+    offset,
+    reverse: true,
+    includeStatus: true,
+    excludeBlocked: true,
+    exactMatchNames: false,
+  });
+
+  const pageItems = Array.isArray(summaries) ? summaries : [];
+
+  for (const summary of pageItems) {
     if (
       !summary ||
       typeof summary.identifier !== 'string' ||
@@ -123,9 +105,15 @@ export const fetchGuestbookEntries = async () => {
     }
   }
 
-  return entries.sort(
-    (a, b) => (b.updated ?? b.created ?? 0) - (a.updated ?? a.created ?? 0),
-  );
+  const hasMore = entries.length > pageSize;
+  const resultEntries = entries.slice(0, pageSize);
+
+  return {
+    entries: resultEntries,
+    hasMore,
+    nextOffset: offset + pageItems.length,
+    exhausted: pageItems.length === 0,
+  };
 };
 
 export const getCurrentUserProfile = async () => {
