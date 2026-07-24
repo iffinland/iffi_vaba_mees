@@ -13,7 +13,6 @@ const initialForm = {
   sourceType: 'qtube',
   sourceUrl: '',
   thumbnailFile: null,
-  videoFile: null,
 };
 
 const toEditForm = (video) => ({
@@ -26,7 +25,6 @@ const toEditForm = (video) => ({
   sourceType: video?.sourceType || 'qtube',
   sourceUrl: video?.sourceUrl || '',
   thumbnailFile: null,
-  videoFile: null,
 });
 
 function VideoPublishModal({
@@ -63,7 +61,6 @@ function VideoPublishModal({
       ...current,
       sourceType,
       sourceUrl: sourceType === 'upload' ? '' : current.sourceUrl,
-      videoFile: sourceType === 'upload' ? current.videoFile : null,
     }));
   };
 
@@ -118,19 +115,18 @@ function VideoPublishModal({
           </p>
 
           {form.sourceType === 'upload' ? (
-            <label>
-              Video file
-              <input
-                type="file"
-                accept="video/*"
-                onChange={(event) => updateField('videoFile', event.target.files?.[0] || null)}
-              />
+            <div className={styles.fieldGroup}>
+              <span>Video file</span>
+              <p className={styles.fieldHint}>
+                The video file will be selected through Qortium Home when you publish.
+                Current maximum supported size: 100 MiB.
+              </p>
               {isEditMode && (
-                <span className={styles.fieldHint}>
-                  Leave empty to keep the current uploaded video.
-                </span>
+                <p className={styles.fieldHint}>
+                  Leave the native picker empty (cancel) to keep the current uploaded video.
+                </p>
               )}
-            </label>
+            </div>
           ) : (
             <label>
               {form.sourceType === 'bridge' ? 'QDN video URI' : 'Video link'}
