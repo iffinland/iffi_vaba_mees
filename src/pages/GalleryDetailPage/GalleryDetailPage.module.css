@@ -50,6 +50,30 @@
   white-space: nowrap;
 }
 
+.ownerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.deleteButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 1.1rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border: none;
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.deleteButton:hover {
+  background: #fecaca;
+}
+
 .viewer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 130px;

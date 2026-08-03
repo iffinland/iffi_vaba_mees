@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { FaEdit, FaMapMarkerAlt } from 'react-icons/fa';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { FaEdit, FaMapMarkerAlt, FaTrash } from 'react-icons/fa';
+import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import StoryEntryPublishModal from '../../components/storybook/StoryEntryPublishModal';
 import {
+  deleteLifeStoryEntry,
   fetchLifeStoryByIdentifier,
   getCurrentUserProfile,
   updateLifeStoryEntry,
@@ -13,11 +15,14 @@ import styles from './StoryEntryDetailPage.module.css';
 
 function StoryEntryDetailPage() {
   const { entryId } = useParams();
+  const navigate = useNavigate();
   const [entry, setEntry] = useState(null);
   const [profile, setProfile] = useState({ address: '', name: '', names: [] });
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
 
@@ -86,6 +91,29 @@ function StoryEntryDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!entry || !canEditEntry) return;
+
+    setIsDeleting(true);
+    setError('');
+
+    try {
+      await deleteLifeStoryEntry({
+        identifier: entry.identifier,
+        authorName: profile.name,
+        authorAddress: profile.address,
+      });
+      setIsDeleteOpen(false);
+      navigate('/storybook', { replace: true });
+      notify('Story entry deleted.');
+    } catch (err) {
+      setError(err?.message || 'Unable to delete story entry.');
+      setIsDeleteOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return <p className={styles.status}>Loading story entry...</p>;
   }
@@ -126,10 +154,16 @@ function StoryEntryDetailPage() {
           </div>
 
           {canEditEntry && (
-            <button type="button" className={styles.editButton} onClick={() => setIsEditOpen(true)}>
-              <FaEdit />
-              <span>Edit entry</span>
-            </button>
+            <div className={styles.ownerActions}>
+              <button type="button" className={styles.editButton} onClick={() => setIsEditOpen(true)}>
+                <FaEdit />
+                <span>Edit entry</span>
+              </button>
+              <button type="button" className={styles.deleteButton} onClick={() => setIsDeleteOpen(true)}>
+                <FaTrash />
+                <span>Delete entry</span>
+              </button>
+            </div>
           )}
         </header>
 
@@ -145,6 +179,15 @@ function StoryEntryDetailPage() {
         isPublishing={isSaving}
         onClose={() => setIsEditOpen(false)}
         onPublish={saveEntryEdits}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteOpen}
+        isDeleting={isDeleting}
+        itemTitle={entry.title || 'Untitled story entry'}
+        itemType="Life story entry"
+        onCancel={() => setIsDeleteOpen(false)}
+        onConfirm={handleDelete}
       />
     </section>
   );

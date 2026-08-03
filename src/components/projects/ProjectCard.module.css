@@ -51,20 +51,55 @@
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
 }
 
+.badges {
+  position: absolute;
+  left: 0.85rem;
+  right: 0.85rem;
+  top: 0.85rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.badges .status {
+  position: static;
+}
+
+.mainProjectBadge {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #333;
+  padding: 0.38rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status colours */
 .active {
-  background: #ffe082;
+  background: #ffe0b2;
+  color: #7d4a00;
 }
 
 .paused {
-  background: #efefef;
+  background: #ffd7d7;
+  color: #8b1a1a;
 }
 
 .released {
-  background: #d6f2df;
+  background: #c8f7c5;
+  color: #1a5e1a;
 }
 
 .idea {
-  background: #f4e4ff;
+  background: #e8f5c8;
+  color: #4a5e1a;
 }
 
 .body {

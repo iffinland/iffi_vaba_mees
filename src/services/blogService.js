@@ -519,4 +519,27 @@ export const updateBlogPost = async ({ post, form, authorName, authorAddress }) 
   return updatedPost;
 };
 
+export const deleteBlogPost = async ({ identifier, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
+    throw new Error('Only the site owner can delete blog posts.');
+  }
+
+  if (!identifier || typeof identifier !== 'string') {
+    throw new Error('A valid blog post identifier is required.');
+  }
+
+  const result = await requestQortium({
+    action: 'DELETE_QDN_RESOURCE',
+    name: OWNER_QORTIUM_NAME,
+    service: BLOG_SERVICE,
+    identifier,
+  });
+
+  if (!result?.accepted) {
+    throw new Error('Blog post deletion was not accepted by QDN.');
+  }
+
+  return { deleted: true, identifier };
+};
+
 export const buildBlogPageLink = () => '';

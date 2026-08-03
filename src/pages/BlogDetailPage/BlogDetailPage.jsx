@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { FaCommentDots, FaEdit, FaHeart, FaShareAlt } from 'react-icons/fa';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { FaCommentDots, FaEdit, FaHeart, FaShareAlt, FaTrash } from 'react-icons/fa';
 import BlogPublishModal from '../../components/blog/BlogPublishModal';
+import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import InlineComments from '../../components/common/InlineComments';
 import { useBlogComments } from '../../hooks/useBlogComments';
 import {
   buildBlogPageLink,
+  deleteBlogPost,
   fetchBlogByIdentifier,
   fetchBlogCategories,
   getCurrentUserProfile,
@@ -30,12 +32,15 @@ const formatDate = (value) => {
 
 function BlogDetailPage() {
   const { postId } = useParams();
+  const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [profile, setProfile] = useState({ address: '', name: '', names: [] });
   const [categories, setCategories] = useState([]);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [error, setError] = useState('');
@@ -158,6 +163,29 @@ function BlogDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!post || !canEditPost) return;
+
+    setIsDeleting(true);
+    setError('');
+
+    try {
+      await deleteBlogPost({
+        identifier: post.identifier,
+        authorName: profile.name,
+        authorAddress: profile.address,
+      });
+      setIsDeleteOpen(false);
+      navigate('/blog', { replace: true });
+      notify('Blog post deleted.');
+    } catch (err) {
+      setError(err?.message || 'Unable to delete blog post.');
+      setIsDeleteOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleLike = async () => {
     if (!post) return;
     if (!profile.name || !profile.address) {
@@ -242,10 +270,16 @@ function BlogDetailPage() {
           </div>
 
           {canEditPost && (
-            <button type="button" className={styles.editButton} onClick={() => setIsEditOpen(true)}>
-              <FaEdit />
-              <span>Edit post</span>
-            </button>
+            <div className={styles.ownerActions}>
+              <button type="button" className={styles.editButton} onClick={() => setIsEditOpen(true)}>
+                <FaEdit />
+                <span>Edit post</span>
+              </button>
+              <button type="button" className={styles.deleteButton} onClick={() => setIsDeleteOpen(true)}>
+                <FaTrash />
+                <span>Delete post</span>
+              </button>
+            </div>
           )}
         </header>
 
@@ -289,6 +323,15 @@ function BlogDetailPage() {
         isPublishing={isSaving}
         onClose={() => setIsEditOpen(false)}
         onPublish={savePostEdits}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteOpen}
+        isDeleting={isDeleting}
+        itemTitle={post.title || 'Untitled blog post'}
+        itemType="Blog post"
+        onCancel={() => setIsDeleteOpen(false)}
+        onConfirm={handleDelete}
       />
     </section>
   );

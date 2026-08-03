@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  deleteProject,
+  fetchProjectMainProjects,
   fetchProjectPage,
   getCurrentUserProfile,
   publishProject,
@@ -11,11 +13,14 @@ export const useProjects = (projectType) => {
   const [projects, setProjects] = useState([]);
   const [profile, setProfile] = useState({ address: '', name: '', names: [] });
   const [page, setPage] = useState(1);
+  const [mainProjects, setMainProjects] = useState([]);
+  const [selectedMainProject, setSelectedMainProject] = useState('');
   const [sortOrder, setSortOrder] = useState('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [status, setStatus] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
   const [hasNextPage, setHasNextPage] = useState(false);
 
@@ -31,6 +36,7 @@ export const useProjects = (projectType) => {
         searchQuery,
         sortOrder,
         status,
+        mainProject: selectedMainProject,
       });
       setProjects(result.projects);
       setHasNextPage(result.hasNextPage);
@@ -41,7 +47,7 @@ export const useProjects = (projectType) => {
     } finally {
       setIsLoading(false);
     }
-  }, [page, projectType, searchQuery, sortOrder, status]);
+  }, [page, projectType, searchQuery, sortOrder, status, selectedMainProject]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -60,8 +66,20 @@ export const useProjects = (projectType) => {
   }, [loadProjects]);
 
   useEffect(() => {
+    const loadMainProjects = async () => {
+      try {
+        setMainProjects(await fetchProjectMainProjects());
+      } catch (err) {
+        console.warn('Unable to load main project options', err);
+      }
+    };
+
+    loadMainProjects();
+  }, []);
+
+  useEffect(() => {
     setPage(1);
-  }, [projectType, searchQuery, sortOrder, status]);
+  }, [projectType, searchQuery, sortOrder, status, selectedMainProject]);
 
   const publishNewProject = useCallback(
     async (form) => {
@@ -77,6 +95,18 @@ export const useProjects = (projectType) => {
           authorAddress: profile.address,
         });
         setProjects((current) => [savedProject, ...current].slice(0, PAGE_SIZE));
+        if (savedProject.mainProject) {
+          setMainProjects((current) => {
+            const normalized = new Set();
+            for (const name of [...current, savedProject.mainProject]) {
+              const key = name.toLowerCase();
+              if (![...normalized].some((existing) => existing.toLowerCase() === key)) {
+                normalized.add(name);
+              }
+            }
+            return Array.from(normalized).sort((a, b) => a.localeCompare(b));
+          });
+        }
         return savedProject;
       } finally {
         setIsPublishing(false);
@@ -85,19 +115,46 @@ export const useProjects = (projectType) => {
     [profile.address, profile.name, projectType],
   );
 
+  const deleteExistingProject = useCallback(
+    async (project) => {
+      if (!profile.name || !profile.address) {
+        throw new Error('A Qortium account with a registered name is required.');
+      }
+
+      setIsDeleting(true);
+      try {
+        const result = await deleteProject({
+          identifier: project.identifier,
+          authorName: profile.name,
+          authorAddress: profile.address,
+        });
+        setProjects((current) => current.filter((item) => item.identifier !== project.identifier));
+        return result;
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [profile.address, profile.name],
+  );
+
   return {
+    deleteExistingProject,
     error,
     hasNextPage,
+    isDeleting,
     isLoading,
     isPublishing,
     loadProjects,
+    mainProjects,
     page,
     profile,
     projects,
     publishNewProject,
     searchQuery,
+    selectedMainProject,
     setPage,
     setSearchQuery,
+    setSelectedMainProject,
     setSortOrder,
     setStatus,
     sortOrder,

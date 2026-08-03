@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  deleteBlogPost,
   fetchBlogCategories,
   fetchBlogPage,
   getCurrentUserProfile,
@@ -19,6 +20,7 @@ export const useBlogPosts = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
   const [hasNextPage, setHasNextPage] = useState(false);
   const [likeCounts, setLikeCounts] = useState({});
@@ -139,10 +141,34 @@ export const useBlogPosts = () => {
     [profile.address, profile.name],
   );
 
+  const deletePost = useCallback(
+    async (post) => {
+      if (!profile.name || !profile.address) {
+        throw new Error('A Qortium account with a registered name is required.');
+      }
+
+      setIsDeleting(true);
+      try {
+        const result = await deleteBlogPost({
+          identifier: post.identifier,
+          authorName: profile.name,
+          authorAddress: profile.address,
+        });
+        setPosts((current) => current.filter((item) => item.identifier !== post.identifier));
+        return result;
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [profile.address, profile.name],
+  );
+
   return {
     categories,
+    deletePost,
     error,
     hasNextPage,
+    isDeleting,
     isLoading,
     isPublishing,
     likeCounts,

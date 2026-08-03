@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   FaCommentDots,
   FaEdit,
@@ -7,7 +7,9 @@ import {
   FaLink,
   FaPaperPlane,
   FaShareAlt,
+  FaTrash,
 } from 'react-icons/fa';
+import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import InlineComments from '../../components/common/InlineComments';
 import VideoPublishModal from '../../components/videos/VideoPublishModal';
 import VideoTipModal from '../../components/videos/VideoTipModal';
@@ -19,6 +21,7 @@ import {
   publishVideoLike,
 } from '../../services/videoEngagementService';
 import {
+  deleteVideo,
   fetchVideoByIdentifier,
   fetchVideoPlaylists,
   getCurrentUserProfile,
@@ -43,11 +46,14 @@ const formatDate = (value) => {
 
 function VideoDetailPage() {
   const { videoId } = useParams();
+  const navigate = useNavigate();
   const [video, setVideo] = useState(null);
   const [profile, setProfile] = useState({ address: '', name: '', names: [] });
   const [isEditVideoOpen, setIsEditVideoOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [playlists, setPlaylists] = useState([]);
@@ -167,6 +173,29 @@ function VideoDetailPage() {
       throw err;
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!video || !canEditVideo) return;
+
+    setIsDeleting(true);
+    setError('');
+
+    try {
+      await deleteVideo({
+        identifier: video.identifier,
+        authorName: profile.name,
+        authorAddress: profile.address,
+      });
+      setIsDeleteOpen(false);
+      navigate('/videos', { replace: true });
+      notify('Video deleted. Video and thumbnail resources remain on QDN as unreferenced resources.');
+    } catch (err) {
+      setError(err?.message || 'Unable to delete video.');
+      setIsDeleteOpen(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -302,14 +331,24 @@ function VideoDetailPage() {
             </button>
           </div>
           {canEditVideo && (
-            <button
-              type="button"
-              className={styles.editVideoButton}
-              onClick={() => setIsEditVideoOpen(true)}
-            >
-              <FaEdit />
-              <span>Edit video</span>
-            </button>
+            <div className={styles.ownerActions}>
+              <button
+                type="button"
+                className={styles.editVideoButton}
+                onClick={() => setIsEditVideoOpen(true)}
+              >
+                <FaEdit />
+                <span>Edit video</span>
+              </button>
+              <button
+                type="button"
+                className={styles.deleteButton}
+                onClick={() => setIsDeleteOpen(true)}
+              >
+                <FaTrash />
+                <span>Delete video</span>
+              </button>
+            </div>
           )}
         </div>
       </article>
@@ -361,6 +400,15 @@ function VideoDetailPage() {
         onClose={() => setIsEditVideoOpen(false)}
         onPublish={saveVideoEdits}
         playlists={playlists}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteOpen}
+        isDeleting={isDeleting}
+        itemTitle={video.title || 'Untitled video'}
+        itemType="Video"
+        onCancel={() => setIsDeleteOpen(false)}
+        onConfirm={handleDelete}
       />
     </section>
   );

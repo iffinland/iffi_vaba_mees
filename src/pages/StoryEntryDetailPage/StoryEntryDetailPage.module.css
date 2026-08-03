@@ -90,6 +90,31 @@
   flex: 0 0 auto;
 }
 
+.ownerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.deleteButton {
+  border: none;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  background: #fef2f2;
+  color: #dc2626;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.deleteButton:hover {
+  background: #fecaca;
+}
+
 .content {
   color: #333;
   line-height: 1.85;

@@ -459,3 +459,26 @@ export const updateLifeStoryEntry = async ({ entry, form, authorName, authorAddr
 
   return updatedEntry;
 };
+
+export const deleteLifeStoryEntry = async ({ identifier, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
+    throw new Error('Only the site owner can delete life story entries.');
+  }
+
+  if (!identifier || typeof identifier !== 'string') {
+    throw new Error('A valid life story identifier is required.');
+  }
+
+  const result = await requestQortium({
+    action: 'DELETE_QDN_RESOURCE',
+    name: OWNER_QORTIUM_NAME,
+    service: LIFE_STORY_SERVICE,
+    identifier,
+  });
+
+  if (!result?.accepted) {
+    throw new Error('Life story entry deletion was not accepted by QDN.');
+  }
+
+  return { deleted: true, identifier };
+};

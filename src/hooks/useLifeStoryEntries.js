@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  deleteLifeStoryEntry,
   fetchLifeStoryEntries,
   getCurrentUserProfile,
   publishLifeStoryEntry,
@@ -14,6 +15,7 @@ export const useLifeStoryEntries = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
   const [hasNextPage, setHasNextPage] = useState(false);
 
@@ -82,10 +84,34 @@ export const useLifeStoryEntries = () => {
     [profile.address, profile.name],
   );
 
+  const deleteEntry = useCallback(
+    async (entry) => {
+      if (!profile.name || !profile.address) {
+        throw new Error('A Qortium account with a registered name is required.');
+      }
+
+      setIsDeleting(true);
+      try {
+        const result = await deleteLifeStoryEntry({
+          identifier: entry.identifier,
+          authorName: profile.name,
+          authorAddress: profile.address,
+        });
+        setEntries((current) => current.filter((item) => item.identifier !== entry.identifier));
+        return result;
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [profile.address, profile.name],
+  );
+
   return {
+    deleteEntry,
     entries,
     error,
     hasNextPage,
+    isDeleting,
     isLoading,
     isPublishing,
     loadEntries,

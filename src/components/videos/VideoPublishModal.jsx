@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import RichTextEditor from '../common/RichTextEditor';
+import { selectQdnPublishSource } from '../../services/qortium/qortiumClient';
 import styles from './VideoPublishModal.module.css';
+
+const MAX_VIDEO_SOURCE_BYTES = 100 * 1024 * 1024; // 100 MiB current Qortium Home platform limit
 
 const initialForm = {
   title: '',
@@ -37,6 +40,9 @@ function VideoPublishModal({
 }) {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState('');
+  const [selectedSource, setSelectedSource] = useState(null);
+  const [isSelectingSource, setIsSelectingSource] = useState(false);
+  const [sourceError, setSourceError] = useState('');
   const isEditMode = Boolean(editVideo);
 
   const playlistOptions = useMemo(() => Array.from(new Set(playlists.filter(Boolean))), [playlists]);
@@ -45,6 +51,8 @@ function VideoPublishModal({
     if (!isOpen) return;
     setForm(editVideo ? toEditForm(editVideo) : initialForm);
     setError('');
+    setSelectedSource(null);
+    setSourceError('');
   }, [editVideo, isOpen]);
 
   if (!isOpen) return null;
@@ -62,19 +70,74 @@ function VideoPublishModal({
       sourceType,
       sourceUrl: sourceType === 'upload' ? '' : current.sourceUrl,
     }));
+    setSourceError('');
+  };
+
+  const handleSelectSource = async () => {
+    setIsSelectingSource(true);
+    setSourceError('');
+
+    try {
+      const source = await selectQdnPublishSource();
+
+      if (source.size > MAX_VIDEO_SOURCE_BYTES) {
+        const sizeMiB = (source.size / (1024 * 1024)).toFixed(1);
+        setSourceError(
+          `The selected file is ${sizeMiB} MiB. Qortium Home currently supports video uploads up to 100 MiB.`,
+        );
+        return;
+      }
+
+      if (source.size === 0) {
+        setSourceError('The selected file appears to be empty. Choose a valid video file.');
+        return;
+      }
+
+      const mimeType = source.mimeType || '';
+      if (mimeType && !mimeType.startsWith('video/')) {
+        setSourceError(
+          `The selected file type (${mimeType || 'unknown'}) does not appear to be a video. Please select a video file.`,
+        );
+        return;
+      }
+
+      setSelectedSource({
+        sourceToken: source.sourceToken,
+        fileName: source.fileName || 'unknown-file',
+        mimeType: mimeType || 'video/mp4',
+        size: source.size,
+        kind: source.kind || 'file',
+        selectedAt: Date.now(),
+      });
+    } catch (err) {
+      if (err?.message?.toLowerCase().includes('cancel')) {
+        // User cancelled — keep previous selection if any, no error
+        return;
+      }
+      setSourceError(err?.message || 'Unable to select video file through Qortium Home.');
+    } finally {
+      setIsSelectingSource(false);
+    }
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
 
+    if (form.sourceType === 'upload' && !selectedSource?.sourceToken) {
+      setError('Select a video file before publishing.');
+      return;
+    }
+
     try {
       await onPublish({
         ...form,
         playlist: form.newPlaylist.trim() || form.playlist,
+        selectedSource: form.sourceType === 'upload' ? selectedSource : null,
       });
       if (!isEditMode) {
         setForm(initialForm);
+        setSelectedSource(null);
       }
       onClose();
     } catch (err) {
@@ -117,13 +180,44 @@ function VideoPublishModal({
           {form.sourceType === 'upload' ? (
             <div className={styles.fieldGroup}>
               <span>Video file</span>
-              <p className={styles.fieldHint}>
-                The video file will be selected through Qortium Home when you publish.
-                Current maximum supported size: 100 MiB.
-              </p>
-              {isEditMode && (
+              {selectedSource ? (
+                <div className={styles.selectedSource}>
+                  <p className={styles.sourceFileName}>
+                    Selected: {selectedSource.fileName}
+                  </p>
+                  <p className={styles.fieldHint}>
+                    Size: {(selectedSource.size / (1024 * 1024)).toFixed(1)} MiB
+                    {selectedSource.mimeType ? `  ·  Type: ${selectedSource.mimeType}` : ''}
+                  </p>
+                  <button
+                    type="button"
+                    className={styles.sourceSelectButton}
+                    onClick={handleSelectSource}
+                    disabled={isSelectingSource || isPublishing}
+                  >
+                    {isSelectingSource ? 'Opening Qortium file picker…' : 'Choose another video'}
+                  </button>
+                </div>
+              ) : (
+                <div className={styles.sourceSelectArea}>
+                  <button
+                    type="button"
+                    className={styles.sourceSelectButton}
+                    onClick={handleSelectSource}
+                    disabled={isSelectingSource || isPublishing}
+                  >
+                    {isSelectingSource ? 'Opening Qortium file picker…' : 'Select video file'}
+                  </button>
+                  <p className={styles.fieldHint}>No video selected</p>
+                  <p className={styles.fieldHint}>
+                    Current maximum supported size: 100 MiB
+                  </p>
+                </div>
+              )}
+              {sourceError && <p className={styles.error}>{sourceError}</p>}
+              {isEditMode && !selectedSource && (
                 <p className={styles.fieldHint}>
-                  Leave the native picker empty (cancel) to keep the current uploaded video.
+                  Leave the picker empty to keep the current uploaded video.
                 </p>
               )}
             </div>

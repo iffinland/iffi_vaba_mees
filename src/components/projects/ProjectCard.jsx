@@ -1,12 +1,6 @@
 import { FaExternalLinkAlt } from 'react-icons/fa';
+import { getProjectStatusClass, PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS } from '../../utils/projectDisplay';
 import styles from './ProjectCard.module.css';
-
-const statusLabels = {
-  idea: 'Idea',
-  active: 'Active',
-  paused: 'Paused',
-  released: 'Released',
-};
 
 const truncate = (value = '', max = 220) => {
   if (value.length <= max) return value;
@@ -20,6 +14,8 @@ function ProjectCard({ onOpenDetail, project }) {
       onOpenDetail(project);
     }
   };
+
+  const statusClass = getProjectStatusClass(project.status);
 
   return (
     <article
@@ -35,9 +31,14 @@ function ProjectCard({ onOpenDetail, project }) {
         ) : (
           <div className={styles.coverPlaceholder}>Project</div>
         )}
-        <span className={`${styles.status} ${styles[project.status] || ''}`}>
-          {statusLabels[project.status] || project.status}
-        </span>
+        <div className={styles.badges}>
+          <span className={`${styles.status} ${statusClass ? styles[statusClass] : ''}`}>
+            {PROJECT_STATUS_LABELS[project.status] || project.status}
+          </span>
+          {project.mainProject && (
+            <span className={styles.mainProjectBadge}>{project.mainProject}</span>
+          )}
+        </div>
       </div>
 
       <div className={styles.body}>
@@ -47,7 +48,7 @@ function ProjectCard({ onOpenDetail, project }) {
       </div>
 
       <div className={styles.footer}>
-        <span>{project.type === 'collaboration' ? 'Collaboration' : 'Own project'}</span>
+        <span>{PROJECT_TYPE_LABELS[project.type] || 'Project'}</span>
         {project.links.length > 0 && (
           <span className={styles.linkHint}>
             <FaExternalLinkAlt />

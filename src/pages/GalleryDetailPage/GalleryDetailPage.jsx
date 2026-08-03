@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams, useParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import {
   FaArrowLeft,
   FaArrowRight,
@@ -9,13 +9,16 @@ import {
   FaHeart,
   FaPaperPlane,
   FaShareAlt,
+  FaTrash,
 } from 'react-icons/fa';
+import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import InlineComments from '../../components/common/InlineComments';
 import GalleryPublishModal from '../../components/gallery/GalleryPublishModal';
 import VideoTipModal from '../../components/videos/VideoTipModal';
 import { useGalleryComments } from '../../hooks/useGalleryComments';
 import { useQortTip } from '../../hooks/useQortTip';
 import {
+  deleteGallery,
   fetchGalleryByIdentifier,
   getCurrentUserProfile,
   updateGallery,
@@ -29,13 +32,16 @@ import styles from './GalleryDetailPage.module.css';
 
 function GalleryDetailPage() {
   const { galleryId } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [gallery, setGallery] = useState(null);
   const [profile, setProfile] = useState({ address: '', name: '', names: [] });
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFullView, setIsFullView] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [imageLikeCount, setImageLikeCount] = useState(0);
   const [isLikingImage, setIsLikingImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -215,6 +221,29 @@ function GalleryDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!gallery || !canEditGallery) return;
+
+    setIsDeleting(true);
+    setError('');
+
+    try {
+      await deleteGallery({
+        identifier: gallery.identifier,
+        authorName: profile.name,
+        authorAddress: profile.address,
+      });
+      setIsDeleteOpen(false);
+      navigate('/gallery', { replace: true });
+      notify('Gallery deleted. Images remain on QDN as unreferenced resources.');
+    } catch (err) {
+      setError(err?.message || 'Unable to delete gallery.');
+      setIsDeleteOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return <p className={styles.status}>Loading gallery...</p>;
   }
@@ -242,10 +271,16 @@ function GalleryDetailPage() {
           />
         </div>
         {canEditGallery && (
-          <button type="button" className={styles.editButton} onClick={() => setIsEditOpen(true)}>
-            <FaEdit />
-            <span>Edit gallery</span>
-          </button>
+          <div className={styles.ownerActions}>
+            <button type="button" className={styles.editButton} onClick={() => setIsEditOpen(true)}>
+              <FaEdit />
+              <span>Edit gallery</span>
+            </button>
+            <button type="button" className={styles.deleteButton} onClick={() => setIsDeleteOpen(true)}>
+              <FaTrash />
+              <span>Delete gallery</span>
+            </button>
+          </div>
         )}
       </header>
 
@@ -356,6 +391,15 @@ function GalleryDetailPage() {
         onSend={tip.sendTip}
         recipientAddress={tip.recipientAddress}
         video={tip.video}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteOpen}
+        isDeleting={isDeleting}
+        itemTitle={gallery.title || 'Untitled gallery'}
+        itemType="Gallery"
+        onCancel={() => setIsDeleteOpen(false)}
+        onConfirm={handleDelete}
       />
 
     </section>

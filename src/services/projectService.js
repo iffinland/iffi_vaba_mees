@@ -97,6 +97,15 @@ const toQdnText = (value, maxLength) => {
   return `${normalized.slice(0, Math.max(0, maxLength - 3)).trim()}...`;
 };
 
+const MAX_MAIN_PROJECT_LENGTH = 100;
+
+const normalizeMainProject = (value) => {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.replace(/\s+/g, ' ').trim();
+  if (!trimmed) return '';
+  return trimmed.slice(0, MAX_MAIN_PROJECT_LENGTH);
+};
+
 const normalizeProjectType = (value) =>
   PROJECT_TYPES.has(value) ? value : 'own';
 
@@ -197,6 +206,7 @@ export const sanitizeProjectPayload = (payload = {}, summary = {}) => {
     startDate: normalizeDate(payload.startDate),
     coverResource: payload.coverResource || null,
     coverUrl: typeof payload.coverUrl === 'string' ? payload.coverUrl : '',
+    mainProject: normalizeMainProject(payload.mainProject),
     authorName: OWNER_QORTIUM_NAME,
     authorAddress: typeof payload.authorAddress === 'string' ? payload.authorAddress : '',
     created,
@@ -265,6 +275,46 @@ export const fetchProjectByIdentifier = async (identifier) => {
   return fetchProjectFromSummary(ownerSummary);
 };
 
+export const fetchProjectMainProjects = async () => {
+  const mainProjects = new Set();
+  let offset = 0;
+  const scanLimit = 50;
+
+  while (true) {
+    const summaries = await fetchSummaries({
+      limit: scanLimit,
+      offset,
+      sortOrder: 'newest',
+    });
+    const pageItems = Array.isArray(summaries) ? summaries : [];
+    if (!pageItems.length) break;
+
+    for (const summary of pageItems) {
+      try {
+        const project = await fetchProjectFromSummary(summary);
+        if (project?.mainProject) {
+          mainProjects.add(project.mainProject);
+        }
+      } catch (error) {
+        console.error('Failed to fetch main project metadata', summary?.identifier, error);
+      }
+    }
+
+    if (pageItems.length < scanLimit) break;
+    offset += pageItems.length;
+  }
+
+  const normalized = new Set();
+  for (const name of mainProjects) {
+    const key = name.toLowerCase();
+    if (![...normalized].some((existing) => existing.toLowerCase() === key)) {
+      normalized.add(name);
+    }
+  }
+
+  return Array.from(normalized).sort((a, b) => a.localeCompare(b));
+};
+
 export const fetchProjectPage = async ({
   page = 1,
   pageSize = 9,
@@ -272,9 +322,11 @@ export const fetchProjectPage = async ({
   searchQuery = '',
   sortOrder = 'newest',
   status = '',
+  mainProject = '',
 }) => {
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const normalizedStatus = status.trim().toLowerCase();
+  const normalizedMainProject = mainProject.trim().toLowerCase();
   const normalizedType = normalizeProjectType(projectType);
   const offset = Math.max(0, page - 1) * pageSize;
   const matches = [];
@@ -300,7 +352,11 @@ export const fetchProjectPage = async ({
         const searchable = `${project.title} ${project.summary} ${project.descriptionText} ${project.role} ${project.goals.join(' ')} ${project.roadmap.join(' ')}`.toLowerCase();
         const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
         const matchesStatus = !normalizedStatus || project.status === normalizedStatus;
-        if (!matchesQuery || !matchesStatus) continue;
+        const matchesMainProject =
+          !normalizedMainProject ||
+          (normalizedMainProject === '__unassigned__' && !project.mainProject) ||
+          (project.mainProject && project.mainProject.toLowerCase() === normalizedMainProject);
+        if (!matchesQuery || !matchesStatus || !matchesMainProject) continue;
 
         if (ownerMatchCount >= offset) {
           matches.push(project);
@@ -370,6 +426,8 @@ export const publishProject = async ({ form, authorName, authorAddress }) => {
     title: form.title,
   });
 
+  const resolvedMainProject = normalizeMainProject(form.newMainProject || form.mainProject);
+
   const payload = sanitizeProjectPayload(
     {
       id: identifier,
@@ -385,6 +443,7 @@ export const publishProject = async ({ form, authorName, authorAddress }) => {
       roadmap: normalizeLines(form.roadmap),
       links: normalizeLinks(form.links),
       startDate: form.startDate,
+      mainProject: resolvedMainProject,
       coverResource: cover.coverResource,
       coverUrl: cover.coverUrl,
       authorName,
@@ -432,6 +491,8 @@ export const updateProject = async ({ project, form, authorName, authorAddress }
     coverUrl = cover.coverUrl || coverUrl;
   }
 
+  const resolvedMainProject = normalizeMainProject(form.newMainProject || form.mainProject);
+
   const updatedProject = sanitizeProjectPayload(
     {
       ...project,
@@ -446,6 +507,7 @@ export const updateProject = async ({ project, form, authorName, authorAddress }
       roadmap: normalizeLines(form.roadmap),
       links: normalizeLinks(form.links),
       startDate: form.startDate,
+      mainProject: resolvedMainProject,
       coverResource,
       coverUrl,
       updated: Date.now(),
@@ -470,4 +532,27 @@ export const updateProject = async ({ project, form, authorName, authorAddress }
   });
 
   return updatedProject;
+};
+
+export const deleteProject = async ({ identifier, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
+    throw new Error('Only the site owner can delete projects.');
+  }
+
+  if (!identifier || typeof identifier !== 'string') {
+    throw new Error('A valid project identifier is required.');
+  }
+
+  const result = await requestQortium({
+    action: 'DELETE_QDN_RESOURCE',
+    name: OWNER_QORTIUM_NAME,
+    service: PROJECT_SERVICE,
+    identifier,
+  });
+
+  if (!result?.accepted) {
+    throw new Error('Project deletion was not accepted by QDN.');
+  }
+
+  return { deleted: true, identifier };
 };

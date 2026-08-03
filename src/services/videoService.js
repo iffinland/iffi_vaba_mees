@@ -4,7 +4,6 @@ import {
   getSelectedQortiumProfile,
   requestQortium,
   sanitizeIdentifierSegment,
-  selectQdnPublishSource,
 } from './qortium/qortiumClient';
 import { getQdnResourceUrl } from './qdnResourceService';
 import { isOwnerName, isOwnerProfile, OWNER_QORTIUM_NAME } from '../utils/siteConfig';
@@ -18,7 +17,6 @@ const MAX_QDN_THUMBNAIL_BYTES = 500000;
 const THUMBNAIL_CANVAS_MAX_SIZE = 1280;
 const MAX_QDN_METADATA_TITLE_LENGTH = 80;
 const MAX_QDN_METADATA_DESCRIPTION_LENGTH = 240;
-const MAX_VIDEO_UPLOAD_BYTES = 1 * 1024 * 1024 * 1024; // 1 GB desired application limit
 const MAX_VIDEO_SOURCE_BYTES = 100 * 1024 * 1024; // 100 MiB current Qortium Home platform limit
 
 const loadImageFile = (file) =>
@@ -438,14 +436,21 @@ export const publishVideo = async ({ form, authorName, authorAddress }) => {
   });
 
   if (form.sourceType === 'upload') {
-    const source = await selectQdnPublishSource();
+    const source = form.selectedSource;
+
+    if (!source?.sourceToken) {
+      throw new Error('Select a video file before publishing.');
+    }
 
     if (source.size > MAX_VIDEO_SOURCE_BYTES) {
-      const sizeMB = (source.size / (1024 * 1024)).toFixed(0);
+      const sizeMiB = (source.size / (1024 * 1024)).toFixed(1);
       throw new Error(
-        `The selected file is ${sizeMB} MB. Qortium Home currently supports video uploads up to 100 MB. ` +
-          'The app will support up to 1 GB when Home increases its source file limit.',
+        `The selected file is ${sizeMiB} MiB. Qortium Home currently supports video uploads up to 100 MiB.`,
       );
+    }
+
+    if (source.size === 0) {
+      throw new Error('The selected file is empty. Choose a valid video file.');
     }
 
     const videoResponse = await requestQortium({
@@ -522,15 +527,18 @@ export const updateVideo = async ({ video, form, authorName, authorAddress }) =>
     thumbnailUrl = thumbnail.thumbnailUrl || thumbnailUrl;
   }
 
-  if (nextSourceType === 'upload') {
-    const source = await selectQdnPublishSource();
+  if (nextSourceType === 'upload' && form.selectedSource?.sourceToken) {
+    const source = form.selectedSource;
 
     if (source.size > MAX_VIDEO_SOURCE_BYTES) {
-      const sizeMB = (source.size / (1024 * 1024)).toFixed(0);
+      const sizeMiB = (source.size / (1024 * 1024)).toFixed(1);
       throw new Error(
-        `The selected file is ${sizeMB} MB. Qortium Home currently supports video uploads up to 100 MB. ` +
-          'The app will support up to 1 GB when Home increases its source file limit.',
+        `The selected file is ${sizeMiB} MiB. Qortium Home currently supports video uploads up to 100 MiB.`,
       );
+    }
+
+    if (source.size === 0) {
+      throw new Error('The selected file is empty. Choose a valid video file.');
     }
 
     const videoResponse = await requestQortium({
@@ -583,6 +591,29 @@ export const updateVideo = async ({ video, form, authorName, authorAddress }) =>
   });
 
   return updatedVideo;
+};
+
+export const deleteVideo = async ({ identifier, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
+    throw new Error('Only the site owner can delete videos.');
+  }
+
+  if (!identifier || typeof identifier !== 'string') {
+    throw new Error('A valid video identifier is required.');
+  }
+
+  const result = await requestQortium({
+    action: 'DELETE_QDN_RESOURCE',
+    name: OWNER_QORTIUM_NAME,
+    service: VIDEO_SERVICE,
+    identifier,
+  });
+
+  if (!result?.accepted) {
+    throw new Error('Video deletion was not accepted by QDN.');
+  }
+
+  return { deleted: true, identifier };
 };
 
 export const updateVideoDescription = async ({ video, descriptionHtml, authorName, authorAddress }) => {

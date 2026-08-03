@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FaTimes, FaTrash } from 'react-icons/fa';
 import RichTextEditor from '../common/RichTextEditor';
 import styles from './ProjectPublishModal.module.css';
@@ -13,6 +13,8 @@ const initialForm = {
   goals: '',
   roadmap: '',
   startDate: '',
+  mainProject: '',
+  newMainProject: '',
   coverFile: null,
   links: [{ label: '', url: '' }],
 };
@@ -27,6 +29,8 @@ const toEditForm = (project) => ({
   goals: (project?.goals || []).join('\n'),
   roadmap: (project?.roadmap || []).join('\n'),
   startDate: project?.startDate || '',
+  mainProject: project?.mainProject || '',
+  newMainProject: '',
   coverFile: null,
   links: project?.links?.length ? project.links.map((link) => ({ ...link })) : [{ label: '', url: '' }],
 });
@@ -42,12 +46,18 @@ function ProjectPublishModal({
   editProject,
   isOpen,
   isPublishing,
+  mainProjects,
   onClose,
   onPublish,
 }) {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState('');
   const isEditMode = Boolean(editProject);
+
+  const mainProjectOptions = useMemo(
+    () => Array.from(new Set((mainProjects || []).filter(Boolean))),
+    [mainProjects],
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -164,6 +174,35 @@ function ProjectPublishModal({
                 value={form.startDate}
                 onChange={(event) => updateField('startDate', event.target.value)}
               />
+            </label>
+          </div>
+
+          <div className={styles.grid}>
+            <label>
+              Main Project
+              <select
+                value={form.mainProject}
+                onChange={(event) => updateField('mainProject', event.target.value)}
+              >
+                <option value="">Select Main Project</option>
+                {mainProjectOptions.map((mp) => (
+                  <option key={mp} value={mp}>
+                    {mp}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              New Main Project
+              <input
+                type="text"
+                value={form.newMainProject}
+                onChange={(event) => updateField('newMainProject', event.target.value)}
+                placeholder="Enter a new Main Project name"
+              />
+              <span className={styles.fieldHint}>
+                If you enter a new name, it will be used instead of the dropdown selection.
+              </span>
             </label>
           </div>
 

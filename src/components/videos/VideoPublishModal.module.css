@@ -130,6 +130,43 @@
   padding: 0.75rem 1rem;
 }
 
+.sourceSelectArea,
+.selectedSource {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.sourceSelectButton {
+  align-self: flex-start;
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  padding: 0.78rem 1.25rem;
+  background: #fafafa;
+  font: inherit;
+  font-weight: 700;
+  color: #333;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.sourceSelectButton:hover:not(:disabled) {
+  border-color: #ffd54f;
+  background: #fff8e1;
+}
+
+.sourceSelectButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sourceFileName {
+  margin: 0;
+  font-weight: 700;
+  color: #2e7d32;
+  word-break: break-word;
+}
+
 @media (max-width: 700px) {
   .grid {
     grid-template-columns: 1fr;

@@ -494,3 +494,26 @@ export const scanAllGalleryIdentifiers = async () => {
 
   return identifiers;
 };
+
+export const deleteGallery = async ({ identifier, authorName, authorAddress }) => {
+  if (!isOwnerProfile({ name: authorName, address: authorAddress })) {
+    throw new Error('Only the site owner can delete galleries.');
+  }
+
+  if (!identifier || typeof identifier !== 'string') {
+    throw new Error('A valid gallery identifier is required.');
+  }
+
+  const result = await requestQortium({
+    action: 'DELETE_QDN_RESOURCE',
+    name: OWNER_QORTIUM_NAME,
+    service: GALLERY_SERVICE,
+    identifier,
+  });
+
+  if (!result?.accepted) {
+    throw new Error('Gallery deletion was not accepted by QDN.');
+  }
+
+  return { deleted: true, identifier };
+};

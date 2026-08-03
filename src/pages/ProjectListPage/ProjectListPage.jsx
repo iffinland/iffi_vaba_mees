@@ -32,13 +32,16 @@ function ProjectListPage() {
     hasNextPage,
     isLoading,
     isPublishing,
+    mainProjects,
     page,
     profile,
     projects,
     publishNewProject,
     searchQuery,
+    selectedMainProject,
     setPage,
     setSearchQuery,
+    setSelectedMainProject,
     setSortOrder,
     setStatus,
     sortOrder,
@@ -110,6 +113,22 @@ function ProjectListPage() {
             <option value="released">Released</option>
           </select>
         </label>
+
+        <label className={styles.sortBox}>
+          Main Project
+          <select
+            value={selectedMainProject}
+            onChange={(event) => setSelectedMainProject(event.target.value)}
+          >
+            <option value="">All</option>
+            <option value="__unassigned__">Unassigned</option>
+            {mainProjects.map((mp) => (
+              <option key={mp} value={mp}>
+                {mp}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {error && <p className={styles.error}>{error}</p>}
@@ -144,6 +163,7 @@ function ProjectListPage() {
         fixedType={normalizedType}
         isOpen={canPublishProjects && isPublishOpen}
         isPublishing={isPublishing}
+        mainProjects={mainProjects}
         onClose={() => setIsPublishOpen(false)}
         onPublish={handlePublish}
       />

@@ -1,27 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { FaEdit, FaExternalLinkAlt } from 'react-icons/fa';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { FaEdit, FaExternalLinkAlt, FaTrash } from 'react-icons/fa';
+import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import ProjectPublishModal from '../../components/projects/ProjectPublishModal';
 import {
+  deleteProject,
   fetchProjectByIdentifier,
+  fetchProjectMainProjects,
   getCurrentUserProfile,
   updateProject,
 } from '../../services/projectService';
 import { sanitizeHtml } from '../../utils/htmlSanitizer';
 import { isOwnerProfile } from '../../utils/siteConfig';
+import { getProjectStatusClass, PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS } from '../../utils/projectDisplay';
 import styles from './ProjectDetailPage.module.css';
-
-const statusLabels = {
-  idea: 'Idea',
-  active: 'Active',
-  paused: 'Paused',
-  released: 'Released',
-};
-
-const typeLabels = {
-  own: 'Own project',
-  collaboration: 'Collaboration project',
-};
 
 const formatDate = (value) => {
   if (!value) return '';
@@ -36,11 +28,15 @@ const formatDate = (value) => {
 
 function ProjectDetailPage() {
   const { projectId } = useParams();
+  const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [profile, setProfile] = useState({ address: '', name: '', names: [] });
+  const [mainProjects, setMainProjects] = useState([]);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
 
@@ -59,6 +55,18 @@ function ProjectDetailPage() {
     };
 
     loadProfile();
+  }, []);
+
+  useEffect(() => {
+    const loadMainProjects = async () => {
+      try {
+        setMainProjects(await fetchProjectMainProjects());
+      } catch (err) {
+        console.warn('Unable to load main project options', err);
+      }
+    };
+
+    loadMainProjects();
   }, []);
 
   useEffect(() => {
@@ -103,12 +111,47 @@ function ProjectDetailPage() {
       setProject(updatedProject);
       setIsEditOpen(false);
       notify('Project updated.');
+      if (updatedProject.mainProject) {
+        setMainProjects((current) => {
+          const normalized = new Set();
+          for (const name of [...current, updatedProject.mainProject]) {
+            const key = name.toLowerCase();
+            if (![...normalized].some((existing) => existing.toLowerCase() === key)) {
+              normalized.add(name);
+            }
+          }
+          return Array.from(normalized).sort((a, b) => a.localeCompare(b));
+        });
+      }
       return updatedProject;
     } catch (err) {
       setError(err?.message || 'Unable to update project.');
       throw err;
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!project || !canEditProject) return;
+
+    setIsDeleting(true);
+    setError('');
+
+    try {
+      await deleteProject({
+        identifier: project.identifier,
+        authorName: profile.name,
+        authorAddress: profile.address,
+      });
+      setIsDeleteOpen(false);
+      navigate(`/projects/${project.type}`, { replace: true });
+      notify('Project deleted.');
+    } catch (err) {
+      setError(err?.message || 'Unable to delete project.');
+      setIsDeleteOpen(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -143,9 +186,14 @@ function ProjectDetailPage() {
         <header className={styles.header}>
           <div>
             <div className={styles.meta}>
-              <span>{typeLabels[project.type]}</span>
-              <span>{statusLabels[project.status] || project.status}</span>
+              <span>{PROJECT_TYPE_LABELS[project.type] || 'Project'}</span>
+              <span className={`${styles.statusBadge} ${styles[getProjectStatusClass(project.status)] || ''}`}>
+                {PROJECT_STATUS_LABELS[project.status] || project.status}
+              </span>
               {project.startDate && <span>{formatDate(project.startDate)}</span>}
+              {project.mainProject && (
+                <span className={styles.mainProjectLabel}>Main Project: {project.mainProject}</span>
+              )}
             </div>
             <h1>{project.title || 'Untitled project'}</h1>
             {project.role && <p className={styles.role}>{project.role}</p>}
@@ -153,10 +201,16 @@ function ProjectDetailPage() {
           </div>
 
           {canEditProject && (
-            <button type="button" className={styles.editButton} onClick={() => setIsEditOpen(true)}>
-              <FaEdit />
-              <span>Edit project</span>
-            </button>
+            <div className={styles.ownerActions}>
+              <button type="button" className={styles.editButton} onClick={() => setIsEditOpen(true)}>
+                <FaEdit />
+                <span>Edit project</span>
+              </button>
+              <button type="button" className={styles.deleteButton} onClick={() => setIsDeleteOpen(true)}>
+                <FaTrash />
+                <span>Delete project</span>
+              </button>
+            </div>
           )}
         </header>
 
@@ -211,8 +265,18 @@ function ProjectDetailPage() {
         fixedType={project.type}
         isOpen={canEditProject && isEditOpen}
         isPublishing={isSaving}
+        mainProjects={mainProjects}
         onClose={() => setIsEditOpen(false)}
         onPublish={saveProjectEdits}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteOpen}
+        isDeleting={isDeleting}
+        itemTitle={project.title || 'Untitled project'}
+        itemType="Project"
+        onCancel={() => setIsDeleteOpen(false)}
+        onConfirm={handleDelete}
       />
     </section>
   );

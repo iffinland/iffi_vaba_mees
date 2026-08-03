@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  deleteVideo,
   fetchVideoPage,
   fetchVideoPlaylists,
   getCurrentUserProfile,
@@ -21,6 +22,7 @@ export const useVideos = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUpdatingVideo, setIsUpdatingVideo] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
   const [hasNextPage, setHasNextPage] = useState(false);
   const [likeCounts, setLikeCounts] = useState({});
@@ -173,14 +175,39 @@ export const useVideos = () => {
     [profile.address, profile.name],
   );
 
+  const deleteExistingVideo = useCallback(
+    async (video) => {
+      if (!profile.name || !profile.address) {
+        throw new Error('A Qortium account with a registered name is required.');
+      }
+
+      setIsDeleting(true);
+      try {
+        const result = await deleteVideo({
+          identifier: video.identifier,
+          authorName: profile.name,
+          authorAddress: profile.address,
+        });
+        setVideos((current) => current.filter((item) => item.identifier !== video.identifier));
+        return result;
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [profile.address, profile.name],
+  );
+
   return {
+    deleteExistingVideo,
     error,
     filteredVideos,
     hasNextPage,
+    isDeleting,
     isLoading,
     isPublishing,
     isUpdatingVideo,
     likeCounts,
+    likeVideo,
     loadVideos,
     page,
     playlists,
@@ -194,6 +221,5 @@ export const useVideos = () => {
     setSearchQuery,
     setSortOrder,
     sortOrder,
-    likeVideo,
   };
 };
