@@ -92,7 +92,7 @@ export const useBlogPosts = () => {
   }, [searchQuery, selectedCategory, sortOrder]);
 
   const publishNewPost = useCallback(
-    async (form) => {
+    async (form, { onProgress } = {}) => {
       if (!profile.name || !profile.address) {
         throw new Error('A Qortium account with a registered name is required.');
       }
@@ -103,6 +103,7 @@ export const useBlogPosts = () => {
           form,
           authorName: profile.name,
           authorAddress: profile.address,
+          onProgress,
         });
         setPosts((current) => [savedPost, ...current].slice(0, PAGE_SIZE));
         if (savedPost.category) {

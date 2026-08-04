@@ -45,8 +45,8 @@ function BlogPage() {
     navigate(`/blog/${encodeURIComponent(post.identifier)}`);
   };
 
-  const handlePublish = async (form) => {
-    await publishNewPost(form);
+  const handlePublish = async (form, options = {}) => {
+    await publishNewPost(form, options);
     notify('Blog post published successfully.');
   };
 

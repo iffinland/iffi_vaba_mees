@@ -129,7 +129,7 @@ function BlogDetailPage() {
   const canEditPost = isOwnerProfile(profile);
   const sanitizedContent = useMemo(() => sanitizeHtml(post?.contentHtml || ''), [post]);
 
-  const savePostEdits = async (form) => {
+  const savePostEdits = async (form, { onProgress } = {}) => {
     if (!post || !canEditPost) {
       throw new Error('Only the site owner can edit this blog post.');
     }
@@ -143,6 +143,7 @@ function BlogDetailPage() {
         form,
         authorName: profile.name,
         authorAddress: profile.address,
+        onProgress,
       });
       setPost(updatedPost);
       if (updatedPost.category) {
