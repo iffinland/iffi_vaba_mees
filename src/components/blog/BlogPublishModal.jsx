@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FaTimes } from 'react-icons/fa';
-import RichTextEditor from '../common/RichTextEditor';
+import { FaEdit, FaTimes } from 'react-icons/fa';
+import RichTextModal from '../common/RichTextModal/RichTextModal';
 import PublishProgressModal from '../common/PublishProgressModal';
 import { usePublishProgress, PUBLISH_PHASES } from '../../hooks/usePublishProgress';
 import styles from './BlogPublishModal.module.css';
@@ -43,6 +43,7 @@ function BlogPublishModal({
 }) {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState('');
+  const [isRichTextOpen, setIsRichTextOpen] = useState(false);
   const isEditMode = Boolean(editPost);
   const isCreateMode = !isEditMode;
 
@@ -349,11 +350,37 @@ function BlogPublishModal({
 
             <div className={styles.fieldGroup}>
               <span>Content</span>
-              <RichTextEditor
-                value={form.contentHtml}
-                onChange={(value) => updateField('contentHtml', value)}
-                placeholder="Write your blog post"
-              />
+              {form.contentHtml ? (
+                <div className={styles.contentPreview}>
+                  <div className={styles.contentPreviewText}>
+                    {form.contentHtml
+                      .replace(/<[^>]*>/g, ' ')
+                      .replace(/\s+/g, ' ')
+                      .trim()
+                      .slice(0, 200) || 'Content ready.'}
+                    {form.contentHtml.replace(/<[^>]*>/g, ' ').trim().length > 200 ? '…' : ''}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.editContentButton}
+                    onClick={() => setIsRichTextOpen(true)}
+                    disabled={isFormDisabled}
+                  >
+                    <FaEdit />
+                    <span>Edit content</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.writeContentButton}
+                  onClick={() => setIsRichTextOpen(true)}
+                  disabled={isFormDisabled}
+                >
+                  <FaEdit />
+                  <span>Write content</span>
+                </button>
+              )}
             </div>
 
             {error && <p className={styles.error}>{error}</p>}
@@ -384,6 +411,17 @@ function BlogPublishModal({
           </form>
         </div>
       </div>
+
+      {/* ---- Rich-text editing modal ---- */}
+      <RichTextModal
+        isOpen={isRichTextOpen}
+        initialHtml={form.contentHtml}
+        onConfirm={(html) => {
+          updateField('contentHtml', html);
+          setIsRichTextOpen(false);
+        }}
+        onClose={() => setIsRichTextOpen(false)}
+      />
 
       {/* ---- Progress modal (create and edit modes) ---- */}
       <PublishProgressModal

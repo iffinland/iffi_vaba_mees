@@ -128,8 +128,73 @@
   cursor: wait;
 }
 
+/* ── Rich-text content trigger ─────────────────────────── */
+
+.writeContentButton,
+.editContentButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 0.75rem 1.1rem;
+  background: #fff;
+  color: #333;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.writeContentButton {
+  min-height: 120px;
+  justify-content: center;
+  width: 100%;
+  border-style: dashed;
+  font-size: 0.95rem;
+}
+
+.writeContentButton:hover {
+  background: #f5f5f5;
+  border-color: #bbb;
+}
+
+.editContentButton {
+  font-size: 0.88rem;
+}
+
+.editContentButton:hover {
+  background: #f0f0f0;
+}
+
+.contentPreview {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  background: #fafafa;
+}
+
+.contentPreviewText {
+  flex: 1;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
 @media (max-width: 760px) {
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .contentPreview {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
