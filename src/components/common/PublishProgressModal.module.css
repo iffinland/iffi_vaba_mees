@@ -1,0 +1,392 @@
+/* ==========================================================================
+   PublishProgressModal — Reusable publication progress dialog
+   Matches the app's clean, premium, minimal style.
+   ========================================================================== */
+
+/* ---- Overlay ---- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1rem;
+  z-index: 1100;
+  overflow: auto;
+}
+
+/* ---- Modal ---- */
+.modal {
+  width: min(600px, 100%);
+  max-height: calc(100vh - 6rem);
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.24);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---- Header ---- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.headerIconSuccess {
+  color: #2e7d32;
+  font-size: 1.2rem;
+}
+
+.headerIconFailed {
+  color: #c62828;
+  font-size: 1.2rem;
+}
+
+.headerIconActive {
+  color: #1565c0;
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .headerIconActive {
+    animation: none;
+  }
+}
+
+.closeButton {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #f2f2f2;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.closeButton:hover {
+  background: #e0e0e0;
+}
+
+/* ---- Phase status section ---- */
+.phaseStatus {
+  padding: 0 1.5rem;
+  flex-shrink: 0;
+}
+
+/* ---- Stage indicators ---- */
+.stageIndicators {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 0.75rem;
+}
+
+.stageBadge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: #f0f0f0;
+  color: #888;
+  white-space: nowrap;
+}
+
+.stageActive {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.stageDone {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.stageConnector {
+  width: 28px;
+  height: 2px;
+  background: #ddd;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ---- Progress bar ---- */
+.progressSection {
+  margin-bottom: 0.6rem;
+}
+
+.progressBarTrack {
+  width: 100%;
+  height: 8px;
+  background: #e8e8e8;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: #1565c0;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+/* Indeterminate bar — animated gradient stripe */
+.indeterminateFill {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, #1565c0 0%, #42a5f5 50%, #1565c0 100%);
+  border-radius: 999px;
+  animation: indeterminateSlide 1.8s ease-in-out infinite;
+}
+
+@keyframes indeterminateSlide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .indeterminateFill {
+    animation: none;
+    width: 100%;
+  }
+
+  .progressBarFill {
+    transition: none;
+  }
+}
+
+/* ---- Progress count text ---- */
+.progressCount {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+/* ---- Message block ---- */
+.messageBlock {
+  margin-bottom: 0.6rem;
+}
+
+.messageLine {
+  margin: 0.15rem 0;
+  font-size: 0.92rem;
+  color: #333;
+  line-height: 1.45;
+}
+
+.messageFailed {
+  border-left: 3px solid #c62828;
+  padding-left: 0.75rem;
+}
+
+.messageFailed .messageLine {
+  color: #c62828;
+  font-weight: 600;
+}
+
+.messageSuccess {
+  border-left: 3px solid #2e7d32;
+  padding-left: 0.75rem;
+}
+
+.messageSuccess .messageLine {
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+/* ---- Current step text ---- */
+.currentStep {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.82rem;
+  color: #666;
+  font-style: italic;
+}
+
+/* ---- Resource list ---- */
+.resourceList {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 280px;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  padding: 0.5rem 1.5rem;
+}
+
+.resourceRow {
+  display: grid;
+  grid-template-columns: 22px 80px minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.4rem 0;
+  font-size: 0.82rem;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.resourceRow:last-child {
+  border-bottom: none;
+}
+
+.resourceRowFailed {
+  background: #fff5f5;
+  border-radius: 4px;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+.statusIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.iconSuccess {
+  color: #2e7d32;
+}
+
+.iconFailed {
+  color: #c62828;
+}
+
+.iconActive {
+  color: #1565c0;
+  animation: spin 1.2s linear infinite;
+}
+
+.iconWaiting {
+  color: #bbb;
+  font-size: 0.7rem;
+}
+
+.resourceService {
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+}
+
+.resourceLabel {
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resourceError {
+  grid-column: 1 / -1;
+  color: #c62828;
+  font-size: 0.75rem;
+  padding-left: 22px;
+  margin-top: 0.15rem;
+}
+
+/* ---- Footer ---- */
+.footer {
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.doneButton {
+  border: none;
+  border-radius: 999px;
+  padding: 0.65rem 2rem;
+  font-weight: 800;
+  cursor: pointer;
+  background: #1565c0;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.doneButton:hover {
+  background: #0d47a1;
+}
+
+.closeButtonText {
+  border: none;
+  border-radius: 999px;
+  padding: 0.65rem 2rem;
+  font-weight: 800;
+  cursor: pointer;
+  background: #c62828;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.closeButtonText:hover {
+  background: #b71c1c;
+}
+
+.activeHint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #888;
+  font-style: italic;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 520px) {
+  .overlay {
+    padding: 1rem 0.5rem;
+    align-items: flex-start;
+  }
+
+  .modal {
+    border-radius: 6px;
+  }
+
+  .header {
+    padding: 1rem 1rem 0.5rem;
+  }
+
+  .header h2 {
+    font-size: 1.15rem;
+  }
+
+  .phaseStatus {
+    padding: 0 1rem;
+  }
+
+  .resourceList {
+    padding: 0.5rem 1rem;
+    max-height: 200px;
+  }
+
+  .resourceRow {
+    grid-template-columns: 22px 65px minmax(0, 1fr);
+    font-size: 0.78rem;
+  }
+
+  .footer {
+    padding: 0.75rem 1rem;
+  }
+}

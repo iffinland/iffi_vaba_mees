@@ -47,13 +47,14 @@ function GalleryPage() {
     navigate(`/gallery/${encodeURIComponent(gallery.identifier)}`);
   };
 
-  const handlePublish = async (form) => {
+  const handlePublish = async (form, options = {}) => {
     if (editGallery) {
-      await updateExistingGallery(editGallery, form);
+      await updateExistingGallery(editGallery, form, options);
       notify('Gallery updated successfully.');
-      setEditGallery(null);
+      // Do NOT clear editGallery here — the progress modal "Done" button
+      // triggers handleProgressDone → onClose → closePublishModal which handles cleanup.
     } else {
-      await publishNewGallery(form);
+      await publishNewGallery(form, options);
       notify('Gallery published successfully.');
     }
   };

@@ -193,7 +193,7 @@ function GalleryDetailPage() {
     }
   };
 
-  const saveGalleryEdits = async (form) => {
+  const saveGalleryEdits = async (form, { onProgress } = {}) => {
     if (!gallery || !canEditGallery) {
       throw new Error('Only the site owner can edit this gallery.');
     }
@@ -207,11 +207,12 @@ function GalleryDetailPage() {
         form,
         authorName: profile.name,
         authorAddress: profile.address,
+        onProgress,
       });
       setGallery(updated);
       setActiveIndex(0);
-      setIsEditOpen(false);
       notify('Gallery updated.');
+      // Do NOT close the edit form here — the progress modal "Done" button handles closure
       return updated;
     } catch (err) {
       setError(err?.message || 'Unable to update gallery.');

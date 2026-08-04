@@ -75,7 +75,7 @@ export const useGalleries = () => {
   }, [sortOrder]);
 
   const publishNewGallery = useCallback(
-    async (form) => {
+    async (form, { onProgress } = {}) => {
       if (!profile.name || !profile.address) {
         throw new Error('A Qortium account with a registered name is required.');
       }
@@ -86,6 +86,7 @@ export const useGalleries = () => {
           form,
           authorName: profile.name,
           authorAddress: profile.address,
+          onProgress,
         });
         setGalleries((current) => [savedGallery, ...current].slice(0, PAGE_SIZE));
         return savedGallery;
@@ -97,7 +98,7 @@ export const useGalleries = () => {
   );
 
   const updateExistingGallery = useCallback(
-    async (gallery, form) => {
+    async (gallery, form, { onProgress } = {}) => {
       if (!profile.name || !profile.address) {
         throw new Error('A Qortium account with a registered name is required.');
       }
@@ -109,6 +110,7 @@ export const useGalleries = () => {
           form,
           authorName: profile.name,
           authorAddress: profile.address,
+          onProgress,
         });
         setGalleries((current) =>
           current.map((item) =>
