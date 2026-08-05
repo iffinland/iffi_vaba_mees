@@ -29,6 +29,7 @@ const formatDate = (value) => {
 
 function VideoCard({
   canEditDescription,
+  commentCount,
   likeCount,
   onComment,
   onEditDescription,
@@ -192,10 +193,11 @@ function VideoCard({
             stopCardClick(event);
             onComment(video);
           }}
-          aria-label="Add comment"
+          aria-label={`${typeof commentCount === 'number' ? `${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}` : 'Add comment'}`}
           title="Comments"
         >
           <FaCommentDots />
+          {typeof commentCount === 'number' ? <span>{commentCount}</span> : null}
         </button>
       </div>
     </article>

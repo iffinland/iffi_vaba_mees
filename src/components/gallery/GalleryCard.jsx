@@ -6,7 +6,7 @@ const truncate = (value = '', max = 180) => {
   return `${value.slice(0, max).trim()}...`;
 };
 
-function GalleryCard({ canEdit, gallery, likeCount, onComment, onEdit, onLike, onOpen, onShare, onTip }) {
+function GalleryCard({ canEdit, commentCount, gallery, likeCount, onComment, onEdit, onLike, onOpen, onShare, onTip }) {
   const stopCardClick = (event) => {
     event.stopPropagation();
   };
@@ -96,10 +96,11 @@ function GalleryCard({ canEdit, gallery, likeCount, onComment, onEdit, onLike, o
             stopCardClick(event);
             onComment(gallery);
           }}
-          aria-label="Add comment"
+          aria-label={`${typeof commentCount === 'number' ? `${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}` : 'Add comment'}`}
           title="Comment"
         >
           <FaCommentDots />
+          {typeof commentCount === 'number' ? <span>{commentCount}</span> : null}
         </button>
       </div>
     </article>

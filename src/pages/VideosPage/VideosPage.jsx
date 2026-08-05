@@ -23,6 +23,7 @@ function VideosPage() {
   const [editingDescriptionVideo, setEditingDescriptionVideo] = useState(null);
   const [toast, setToast] = useState('');
   const {
+    commentCounts,
     error,
     filteredVideos,
     hasNextPage,
@@ -172,6 +173,7 @@ function VideosPage() {
           {filteredVideos.map((video) => (
             <VideoCard
               canEditDescription={canPublishVideos}
+              commentCount={commentCounts[video.identifier]}
               key={video.identifier}
               video={video}
               likeCount={likeCounts[video.identifier] || 0}

@@ -7,6 +7,7 @@ import {
   updateGallery,
 } from '../services/galleryService';
 import {
+  fetchGalleryCommentCount,
   fetchGalleryLikeCount,
   publishGalleryLike,
 } from '../services/galleryEngagementService';
@@ -25,6 +26,7 @@ export const useGalleries = () => {
   const [error, setError] = useState('');
   const [hasNextPage, setHasNextPage] = useState(false);
   const [likeCounts, setLikeCounts] = useState({});
+  const [commentCounts, setCommentCounts] = useState({});
 
   const loadGalleries = useCallback(async () => {
     setIsLoading(true);
@@ -45,6 +47,17 @@ export const useGalleries = () => {
         }),
       );
       setLikeCounts(Object.fromEntries(counts));
+
+      const commentCountsResult = (await Promise.all(
+        result.galleries.map(async (gallery) => {
+          try {
+            return [gallery.identifier, await fetchGalleryCommentCount(gallery.identifier)];
+          } catch (err) {
+            console.warn('Failed to load comment count for gallery', gallery.identifier, err);
+          }
+        }),
+      )).filter(Boolean);
+      setCommentCounts(Object.fromEntries(commentCountsResult));
     } catch (err) {
       setError(err?.message || 'Unable to load galleries.');
       setGalleries([]);
@@ -171,6 +184,7 @@ export const useGalleries = () => {
   );
 
   return {
+    commentCounts,
     deleteExistingGallery,
     error,
     galleries,

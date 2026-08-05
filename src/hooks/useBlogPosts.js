@@ -6,7 +6,7 @@ import {
   getCurrentUserProfile,
   publishBlogPost,
 } from '../services/blogService';
-import { fetchBlogLikeCount, publishBlogLike } from '../services/blogEngagementService';
+import { fetchBlogCommentCount, fetchBlogLikeCount, publishBlogLike } from '../services/blogEngagementService';
 
 const PAGE_SIZE = 9;
 
@@ -24,6 +24,7 @@ export const useBlogPosts = () => {
   const [error, setError] = useState('');
   const [hasNextPage, setHasNextPage] = useState(false);
   const [likeCounts, setLikeCounts] = useState({});
+  const [commentCounts, setCommentCounts] = useState({});
 
   const loadPosts = useCallback(async () => {
     setIsLoading(true);
@@ -50,6 +51,17 @@ export const useBlogPosts = () => {
         }),
       );
       setLikeCounts(Object.fromEntries(counts));
+
+      const commentCountsResult = (await Promise.all(
+        result.posts.map(async (post) => {
+          try {
+            return [post.identifier, await fetchBlogCommentCount(post.identifier)];
+          } catch (err) {
+            console.warn('Failed to load comment count for blog', post.identifier, err);
+          }
+        }),
+      )).filter(Boolean);
+      setCommentCounts(Object.fromEntries(commentCountsResult));
     } catch (err) {
       setError(err?.message || 'Unable to load blog posts.');
       setPosts([]);
@@ -166,6 +178,7 @@ export const useBlogPosts = () => {
 
   return {
     categories,
+    commentCounts,
     deletePost,
     error,
     hasNextPage,

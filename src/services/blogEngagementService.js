@@ -154,6 +154,33 @@ export const updateBlogComment = async ({
   return payload;
 };
 
+export const fetchBlogCommentCount = async (postId) => {
+  let totalCount = 0;
+  let offset = 0;
+
+  while (true) {
+    const page = await requestQortium({
+      action: 'SEARCH_QDN_RESOURCES',
+      service: 'DOCUMENT',
+      mode: 'ALL',
+      identifier: `${COMMENT_PREFIX}${toEntityKey(postId)}_`,
+      prefix: true,
+      limit: PAGE_SIZE,
+      offset,
+      reverse: true,
+      includeMetadata: false,
+      excludeBlocked: true,
+    });
+
+    const items = Array.isArray(page) ? page : [];
+    totalCount += items.length;
+    if (items.length < PAGE_SIZE) break;
+    offset += items.length;
+  }
+
+  return totalCount;
+};
+
 export const fetchBlogLikeCount = async (postId) => {
   let totalCount = 0;
   let offset = 0;

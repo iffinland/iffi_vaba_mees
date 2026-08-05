@@ -15,6 +15,7 @@ function BlogPage() {
   const [toast, setToast] = useState('');
   const {
     categories,
+    commentCounts,
     error,
     hasNextPage,
     isLoading,
@@ -130,6 +131,7 @@ function BlogPage() {
           {posts.map((post) => (
             <BlogCard
               key={post.identifier}
+              commentCount={commentCounts[post.identifier]}
               likeCount={likeCounts[post.identifier] || 0}
               onComment={openPostDetail}
               onLike={handleLike}

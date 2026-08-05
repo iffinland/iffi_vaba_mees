@@ -17,6 +17,7 @@ function GalleryPage() {
   const [editGallery, setEditGallery] = useState(null);
   const [toast, setToast] = useState('');
   const {
+    commentCounts,
     error,
     galleries,
     hasNextPage,
@@ -130,6 +131,7 @@ function GalleryPage() {
           {galleries.map((gallery) => (
             <GalleryCard
               canEdit={canPublishGalleries}
+              commentCount={commentCounts[gallery.identifier]}
               gallery={gallery}
               key={gallery.identifier}
               likeCount={likeCounts[gallery.identifier] || 0}

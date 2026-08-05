@@ -7,7 +7,7 @@ import {
   publishVideo,
   updateVideoDescription,
 } from '../services/videoService';
-import { fetchVideoLikeCount, publishVideoLike } from '../services/videoEngagementService';
+import { fetchVideoCommentCount, fetchVideoLikeCount, publishVideoLike } from '../services/videoEngagementService';
 
 const PAGE_SIZE = 9;
 
@@ -26,6 +26,7 @@ export const useVideos = () => {
   const [error, setError] = useState('');
   const [hasNextPage, setHasNextPage] = useState(false);
   const [likeCounts, setLikeCounts] = useState({});
+  const [commentCounts, setCommentCounts] = useState({});
 
   const loadVideos = useCallback(async () => {
     setIsLoading(true);
@@ -52,6 +53,17 @@ export const useVideos = () => {
         }),
       );
       setLikeCounts(Object.fromEntries(counts));
+
+      const commentCountsResult = (await Promise.all(
+        result.videos.map(async (video) => {
+          try {
+            return [video.identifier, await fetchVideoCommentCount(video.identifier)];
+          } catch (err) {
+            console.warn('Failed to load comment count for video', video.identifier, err);
+          }
+        }),
+      )).filter(Boolean);
+      setCommentCounts(Object.fromEntries(commentCountsResult));
     } catch (err) {
       setError(err?.message || 'Unable to load videos.');
       setVideos([]);
@@ -198,6 +210,7 @@ export const useVideos = () => {
   );
 
   return {
+    commentCounts,
     deleteExistingVideo,
     error,
     filteredVideos,

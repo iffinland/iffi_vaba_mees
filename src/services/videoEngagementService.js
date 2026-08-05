@@ -154,6 +154,33 @@ export const updateVideoComment = async ({
   return payload;
 };
 
+export const fetchVideoCommentCount = async (videoId) => {
+  let totalCount = 0;
+  let offset = 0;
+
+  while (true) {
+    const page = await requestQortium({
+      action: 'SEARCH_QDN_RESOURCES',
+      service: 'DOCUMENT',
+      mode: 'ALL',
+      identifier: `${COMMENT_PREFIX}${toEntityKey(videoId)}_`,
+      prefix: true,
+      limit: PAGE_SIZE,
+      offset,
+      reverse: true,
+      includeMetadata: false,
+      excludeBlocked: true,
+    });
+
+    const items = Array.isArray(page) ? page : [];
+    totalCount += items.length;
+    if (items.length < PAGE_SIZE) break;
+    offset += items.length;
+  }
+
+  return totalCount;
+};
+
 export const fetchVideoLikeCount = async (videoId) => {
   let totalCount = 0;
   let offset = 0;

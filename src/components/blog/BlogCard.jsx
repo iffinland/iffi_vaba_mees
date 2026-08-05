@@ -17,7 +17,7 @@ const formatDate = (value) => {
   });
 };
 
-function BlogCard({ likeCount, onComment, onLike, onOpenDetail, onShare, post }) {
+function BlogCard({ commentCount, likeCount, onComment, onLike, onOpenDetail, onShare, post }) {
   const stopCardClick = (event) => {
     event.stopPropagation();
   };
@@ -91,10 +91,11 @@ function BlogCard({ likeCount, onComment, onLike, onOpenDetail, onShare, post })
             stopCardClick(event);
             onComment(post);
           }}
-          aria-label="Read comments"
+          aria-label={`${typeof commentCount === 'number' ? `${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}` : 'Read comments'}`}
           title="Comments"
         >
           <FaCommentDots />
+          {typeof commentCount === 'number' ? <span>{commentCount}</span> : null}
         </button>
       </div>
     </article>
