@@ -155,6 +155,8 @@ function BlogPage() {
         categories={categories}
         isOpen={canPublishPosts && isPublishOpen}
         isPublishing={isPublishing}
+        ownerName={profile?.name || ''}
+        accountNames={profile?.names || (profile?.name ? [profile.name] : [])}
         onClose={() => setIsPublishOpen(false)}
         onPublish={handlePublish}
       />

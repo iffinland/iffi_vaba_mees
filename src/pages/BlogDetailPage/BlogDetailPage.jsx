@@ -14,7 +14,8 @@ import {
   updateBlogPost,
 } from '../../services/blogService';
 import { fetchBlogLikeCount, publishBlogLike } from '../../services/blogEngagementService';
-import { sanitizeHtml } from '../../utils/htmlSanitizer';
+import { RichTextContent } from '../../components/editor/RichTextContent';
+import { htmlToBbcode } from '../../utils/richTextUtils';
 import { isOwnerProfile } from '../../utils/siteConfig';
 import { copyTextToClipboard } from '../../utils/videoLinks';
 import styles from './BlogDetailPage.module.css';
@@ -127,7 +128,19 @@ function BlogDetailPage() {
   }, [post]);
 
   const canEditPost = isOwnerProfile(profile);
-  const sanitizedContent = useMemo(() => sanitizeHtml(post?.contentHtml || ''), [post]);
+
+  // Convert legacy HTML content to BBCode for RichTextContent.
+  // New posts (after Bugfix-27) store BBCode natively and pass through unchanged.
+  const richTextValue = useMemo(() => {
+    const raw = post?.contentHtml || '';
+    if (!raw) return '';
+    // If the content appears to be HTML (contains angle-bracket tags),
+    // convert it to BBCode so RichTextContent can render it.
+    if (/<[a-z][\s\S]*?>/i.test(raw)) {
+      return htmlToBbcode(raw);
+    }
+    return raw;
+  }, [post]);
 
   const savePostEdits = async (form, { onProgress } = {}) => {
     if (!post || !canEditPost) {
@@ -297,10 +310,13 @@ function BlogDetailPage() {
           </button>
         </div>
 
-        <div
-          className={styles.content}
-          dangerouslySetInnerHTML={{ __html: sanitizedContent || '<p>No content added yet.</p>' }}
-        />
+        <div className={styles.content}>
+          {richTextValue ? (
+            <RichTextContent value={richTextValue} />
+          ) : (
+            <p>No content added yet.</p>
+          )}
+        </div>
       </article>
 
       <div ref={commentsRef} className={styles.commentsWrap}>
@@ -322,6 +338,8 @@ function BlogDetailPage() {
         editPost={post}
         isOpen={canEditPost && isEditOpen}
         isPublishing={isSaving}
+        ownerName={profile?.name || ''}
+        accountNames={profile?.names || (profile?.name ? [profile.name] : [])}
         onClose={() => setIsEditOpen(false)}
         onPublish={savePostEdits}
       />

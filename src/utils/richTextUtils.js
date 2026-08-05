@@ -447,5 +447,7 @@ export const stripRichTextMarkup = (value) =>
     .replace(/\[(\/)?(b|i|u|h2|h3|quote|code)\]/gi, '')
     .replace(/\[color=#[0-9a-f]{6}\]([\s\S]*?)\[\/color\]/gi, '$1')
     .replace(/\[url=[^\]]+\]([\s\S]*?)\[\/url\]/gi, '$1')
+    .replace(/\[(image|video|file)qdn\][\s\S]*?\[\/\1qdn\]/gi, '')
+    .replace(/\[qdnembed\][\s\S]*?\[\/qdnembed\]/gi, '')
     .replace(/\s+/g, ' ')
     .trim();

@@ -38,6 +38,8 @@ function BlogPublishModal({
   editPost,
   isOpen,
   isPublishing,
+  ownerName = '',
+  accountNames,
   onClose,
   onPublish,
 }) {
@@ -416,6 +418,8 @@ function BlogPublishModal({
       <RichTextModal
         isOpen={isRichTextOpen}
         initialHtml={form.contentHtml}
+        ownerName={ownerName}
+        accountNames={accountNames}
         onConfirm={(html) => {
           updateField('contentHtml', html);
           setIsRichTextOpen(false);
