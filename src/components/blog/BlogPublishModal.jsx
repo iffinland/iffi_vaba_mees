@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FaChevronDown, FaChevronUp, FaEdit, FaTimes } from 'react-icons/fa';
 import { RichTextEditor } from '../editor/RichTextEditor';
+import TagInput from '../common/TagInput/TagInput';
 import PublishProgressModal from '../common/PublishProgressModal';
 import { usePublishProgress, PUBLISH_PHASES } from '../../hooks/usePublishProgress';
 import { getEffectiveContentLength, BLOG_CONTENT_COLLAPSE_THRESHOLD } from '../../utils/contentLength';
@@ -12,7 +13,7 @@ const initialForm = {
   contentHtml: '',
   category: '',
   newCategory: '',
-  tags: '',
+  tags: [],
   publishedDate: '',
   coverFile: null,
 };
@@ -23,7 +24,7 @@ const toEditForm = (post) => ({
   contentHtml: post?.contentHtml || '',
   category: post?.category || '',
   newCategory: '',
-  tags: (post?.tags || []).join(', '),
+  tags: Array.isArray(post?.tags) ? [...post.tags] : [],
   publishedDate: post?.publishedDate || '',
   coverFile: null,
 });
@@ -53,6 +54,7 @@ function BlogPublishModal({
   accountNames,
   onClose,
   onPublish,
+  tagInventory = [],
 }) {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState('');
@@ -361,14 +363,13 @@ function BlogPublishModal({
 
             <label>
               Tags
-              <input
-                type="text"
+              <TagInput
                 value={form.tags}
-                onChange={(event) => updateField('tags', event.target.value)}
-                placeholder="forest, qortium, life"
+                suggestions={tagInventory}
+                onChange={(nextTags) => updateField('tags', nextTags)}
+                placeholder="Add a tag…"
                 disabled={isFormDisabled}
               />
-              <span className={styles.fieldHint}>Separate tags with commas.</span>
             </label>
 
             <div className={styles.fieldGroup}>

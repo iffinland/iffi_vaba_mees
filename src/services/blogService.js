@@ -13,6 +13,7 @@ import {
 } from './qdnResourceService';
 import { getCurrentUserProfile } from './videoService';
 import { prepareUploadFilename } from '../utils/filenameUtils';
+import { buildTagInventory, normalizeTagForComparison } from '../utils/tagNormalizer';
 
 export { getCurrentUserProfile };
 
@@ -118,12 +119,15 @@ const toQdnDescription = (value, fallback = '') =>
 
 const normalizeTags = (value) => {
   if (Array.isArray(value)) {
-    return value.map((tag) => String(tag).trim()).filter(Boolean).slice(0, 12);
+    return value
+      .map((tag) => String(tag).trim().replace(/\s+/g, ' '))
+      .filter(Boolean)
+      .slice(0, 12);
   }
 
   return String(value || '')
     .split(',')
-    .map((tag) => tag.trim())
+    .map((tag) => tag.trim().replace(/\s+/g, ' '))
     .filter(Boolean)
     .slice(0, 12);
 };
@@ -263,12 +267,14 @@ export const fetchBlogPage = async ({
   category = '',
   searchQuery = '',
   sortOrder = 'newest',
+  tag = '',
 }) => {
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const normalizedCategory = category.trim().toLowerCase();
+  const normalizedTag = tag.trim();
   const offset = Math.max(0, page - 1) * pageSize;
 
-  if (normalizedQuery || normalizedCategory) {
+  if (normalizedQuery || normalizedCategory || normalizedTag) {
     const matches = [];
     let qdnOffset = 0;
     let hasMore = true;
@@ -293,8 +299,14 @@ export const fetchBlogPage = async ({
           const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
           const matchesCategory =
             !normalizedCategory || post.category.toLowerCase() === normalizedCategory;
+          const matchesTag =
+            !normalizedTag ||
+            (Array.isArray(post.tags) &&
+              post.tags.some(
+                (t) => normalizeTagForComparison(t) === normalizeTagForComparison(normalizedTag),
+              ));
 
-          if (matchesQuery && matchesCategory) {
+          if (matchesQuery && matchesCategory && matchesTag) {
             matches.push(post);
           }
         } catch (error) {
@@ -383,6 +395,48 @@ export const fetchBlogCategories = async () => {
   }
 
   return Array.from(categories).sort((a, b) => a.localeCompare(b));
+};
+
+/**
+ * Build a deduplicated tag inventory from all owner blog posts.
+ * Scans summaries only (does NOT fetch full rich-text bodies).
+ * Each summary already includes sanitized tags.
+ *
+ * Uses the same scan approach as fetchBlogCategories to
+ * walk all owner-authored DOCUMENT resources.
+ *
+ * @returns {Promise<{ display: string, normalized: string }[]>}
+ */
+export const fetchBlogTags = async () => {
+  const allPosts = [];
+  let offset = 0;
+  const scanLimit = 50;
+
+  while (true) {
+    const summaries = await fetchSummaries({
+      limit: scanLimit,
+      offset,
+      sortOrder: 'newest',
+    });
+    const pageItems = Array.isArray(summaries) ? summaries : [];
+    if (!pageItems.length) break;
+
+    for (const summary of pageItems) {
+      try {
+        const post = await fetchBlogPostFromSummary(summary);
+        if (post) {
+          allPosts.push(post);
+        }
+      } catch (error) {
+        console.error('Failed to fetch blog tag metadata', summary?.identifier, error);
+      }
+    }
+
+    if (pageItems.length < scanLimit) break;
+    offset += pageItems.length;
+  }
+
+  return buildTagInventory(allPosts);
 };
 
 // ---------------------------------------------------------------------------

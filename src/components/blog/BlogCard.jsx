@@ -52,13 +52,6 @@ function BlogCard({ commentCount, likeCount, onComment, onLike, onOpenDetail, on
         </div>
         <h2>{post.title || 'Untitled blog post'}</h2>
         <p>{truncate(post.excerpt || post.contentText || 'No excerpt added yet.')}</p>
-        {post.tags.length > 0 && (
-          <div className={styles.tags}>
-            {post.tags.slice(0, 4).map((tag) => (
-              <span key={tag}>{tag}</span>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className={styles.actions}>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaTimes } from 'react-icons/fa';
 import BlogCard from '../../components/blog/BlogCard';
 import BlogPublishModal from '../../components/blog/BlogPublishModal';
 import { useBlogPosts } from '../../hooks/useBlogPosts';
@@ -28,11 +28,14 @@ function BlogPage() {
     publishNewPost,
     searchQuery,
     selectedCategory,
+    selectedTag,
     setPage,
     setSearchQuery,
     setSelectedCategory,
     setSortOrder,
+    setTagFilter,
     sortOrder,
+    tagInventory,
   } = useBlogPosts();
 
   const notify = (message) => {
@@ -120,12 +123,43 @@ function BlogPage() {
         </label>
       </div>
 
+      {selectedTag && (
+        <div className={styles.tagFilterBar}>
+          <span>
+            Posts tagged &ldquo;{selectedTag}&rdquo;
+          </span>
+          <button
+            type="button"
+            className={styles.clearTagButton}
+            onClick={() => setTagFilter('')}
+            aria-label={`Clear tag filter: ${selectedTag}`}
+          >
+            <FaTimes size={12} />
+            <span>Clear tag filter</span>
+          </button>
+        </div>
+      )}
+
       {error && <p className={styles.error}>{error}</p>}
 
       {isLoading ? (
         <p className={styles.status}>Loading blog posts...</p>
       ) : posts.length === 0 ? (
-        <p className={styles.status}>No blog posts found.</p>
+        selectedTag ? (
+          <p className={styles.status}>
+            No posts found with the tag &ldquo;{selectedTag}&rdquo;.
+            {' '}
+            <button
+              type="button"
+              className={styles.inlineClearButton}
+              onClick={() => setTagFilter('')}
+            >
+              Clear tag filter
+            </button>
+          </p>
+        ) : (
+          <p className={styles.status}>No blog posts found.</p>
+        )
       ) : (
         <div className={styles.grid}>
           {posts.map((post) => (
@@ -161,6 +195,7 @@ function BlogPage() {
         accountNames={profile?.names || (profile?.name ? [profile.name] : [])}
         onClose={() => setIsPublishOpen(false)}
         onPublish={handlePublish}
+        tagInventory={tagInventory}
       />
     </section>
   );

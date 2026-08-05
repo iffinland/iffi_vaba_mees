@@ -10,6 +10,7 @@ import {
   deleteBlogPost,
   fetchBlogByIdentifier,
   fetchBlogCategories,
+  fetchBlogTags,
   getCurrentUserProfile,
   updateBlogPost,
 } from '../../services/blogService';
@@ -37,6 +38,7 @@ function BlogDetailPage() {
   const [post, setPost] = useState(null);
   const [profile, setProfile] = useState({ address: '', name: '', names: [] });
   const [categories, setCategories] = useState([]);
+  const [tagInventory, setTagInventory] = useState([]);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,6 +79,18 @@ function BlogDetailPage() {
     };
 
     loadCategories();
+  }, []);
+
+  useEffect(() => {
+    const loadTagInventory = async () => {
+      try {
+        setTagInventory(await fetchBlogTags());
+      } catch (err) {
+        console.warn('Unable to load blog tag inventory', err);
+      }
+    };
+
+    loadTagInventory();
   }, []);
 
   useEffect(() => {
@@ -277,7 +291,15 @@ function BlogDetailPage() {
             {post.tags.length > 0 && (
               <div className={styles.tags}>
                 {post.tags.map((tag) => (
-                  <span key={tag}>{tag}</span>
+                  <button
+                    key={tag}
+                    type="button"
+                    className={styles.tagButton}
+                    onClick={() => navigate(`/blog?tag=${encodeURIComponent(tag)}`)}
+                    aria-label={`Filter posts tagged ${tag}`}
+                  >
+                    {tag}
+                  </button>
                 ))}
               </div>
             )}
@@ -342,6 +364,7 @@ function BlogDetailPage() {
         accountNames={profile?.names || (profile?.name ? [profile.name] : [])}
         onClose={() => setIsEditOpen(false)}
         onPublish={savePostEdits}
+        tagInventory={tagInventory}
       />
 
       <DeleteConfirmationModal

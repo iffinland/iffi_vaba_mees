@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   deleteBlogPost,
   fetchBlogCategories,
   fetchBlogPage,
+  fetchBlogTags,
   getCurrentUserProfile,
   publishBlogPost,
 } from '../services/blogService';
@@ -11,11 +13,14 @@ import { fetchBlogCommentCount, fetchBlogLikeCount, publishBlogLike } from '../s
 const PAGE_SIZE = 9;
 
 export const useBlogPosts = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState([]);
   const [profile, setProfile] = useState({ address: '', name: '', names: [] });
   const [page, setPage] = useState(1);
   const [categories, setCategories] = useState([]);
+  const [tagInventory, setTagInventory] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedTag, setSelectedTag] = useState('');
   const [sortOrder, setSortOrder] = useState('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +30,32 @@ export const useBlogPosts = () => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [likeCounts, setLikeCounts] = useState({});
   const [commentCounts, setCommentCounts] = useState({});
+
+  // Sync selectedTag from URL parameter
+  useEffect(() => {
+    const tagParam = searchParams.get('tag');
+    if (tagParam) {
+      setSelectedTag(tagParam);
+    } else {
+      setSelectedTag('');
+    }
+  }, [searchParams]);
+
+  // Set the tag param in URL when selectedTag changes
+  const setTagFilter = useCallback(
+    (tag) => {
+      const next = new URLSearchParams(searchParams);
+      if (tag) {
+        next.set('tag', tag);
+      } else {
+        next.delete('tag');
+      }
+      // Preserve other params, reset page
+      setSearchParams(next, { replace: true });
+      setPage(1);
+    },
+    [searchParams, setSearchParams],
+  );
 
   const loadPosts = useCallback(async () => {
     setIsLoading(true);
@@ -37,6 +68,7 @@ export const useBlogPosts = () => {
         category: selectedCategory,
         searchQuery,
         sortOrder,
+        tag: selectedTag,
       });
       setPosts(result.posts);
       setHasNextPage(result.hasNextPage);
@@ -69,7 +101,7 @@ export const useBlogPosts = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [page, searchQuery, selectedCategory, sortOrder]);
+  }, [page, searchQuery, selectedCategory, sortOrder, selectedTag]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -100,8 +132,20 @@ export const useBlogPosts = () => {
   }, []);
 
   useEffect(() => {
+    const loadTagInventory = async () => {
+      try {
+        setTagInventory(await fetchBlogTags());
+      } catch (err) {
+        console.warn('Unable to load blog tag inventory', err);
+      }
+    };
+
+    loadTagInventory();
+  }, []);
+
+  useEffect(() => {
     setPage(1);
-  }, [searchQuery, selectedCategory, sortOrder]);
+  }, [searchQuery, selectedCategory, sortOrder, selectedTag]);
 
   const publishNewPost = useCallback(
     async (form, { onProgress } = {}) => {
@@ -194,10 +238,13 @@ export const useBlogPosts = () => {
     publishNewPost,
     searchQuery,
     selectedCategory,
+    selectedTag,
     setPage,
     setSearchQuery,
     setSelectedCategory,
     setSortOrder,
+    setTagFilter,
     sortOrder,
+    tagInventory,
   };
 };
