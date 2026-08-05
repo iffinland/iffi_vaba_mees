@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FaEdit, FaTimes } from 'react-icons/fa';
-import RichTextModal from '../common/RichTextModal/RichTextModal';
+import { FaChevronDown, FaChevronUp, FaEdit, FaTimes } from 'react-icons/fa';
+import { RichTextEditor } from '../editor/RichTextEditor';
 import PublishProgressModal from '../common/PublishProgressModal';
 import { usePublishProgress, PUBLISH_PHASES } from '../../hooks/usePublishProgress';
+import { getEffectiveContentLength, BLOG_CONTENT_COLLAPSE_THRESHOLD } from '../../utils/contentLength';
 import styles from './BlogPublishModal.module.css';
 
 const initialForm = {
@@ -27,11 +28,21 @@ const toEditForm = (post) => ({
   coverFile: null,
 });
 
-const stripHtml = (html = '') =>
-  html
-    .replace(/<[^>]*>/g, ' ')
+/**
+ * Check if rich-text content is effectively empty (no visible text).
+ * Handles both BBCode and HTML content.
+ */
+const isEmptyContent = (value) => {
+  if (!value || typeof value !== 'string') return true;
+  const stripped = value
+    .replace(/\[(\/)?(b|i|u|h2|h3|quote|code|url|color|imageqdn|videoqdn|fileqdn|qdnembed)[^\]]*\]/gi, '')
+    .replace(/\[color=#[0-9a-f]{6}\]/gi, '')
+    .replace(/\[url=[^\]]+\]/gi, '')
+    .replace(/<[^>]*>/g, '')
     .replace(/\s+/g, ' ')
     .trim();
+  return stripped.length === 0;
+};
 
 function BlogPublishModal({
   categories,
@@ -45,7 +56,7 @@ function BlogPublishModal({
 }) {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState('');
-  const [isRichTextOpen, setIsRichTextOpen] = useState(false);
+  const [isContentExpanded, setIsContentExpanded] = useState(false);
   const isEditMode = Boolean(editPost);
   const isCreateMode = !isEditMode;
 
@@ -92,6 +103,16 @@ function BlogPublishModal({
     if (justOpened) {
       resetProgress();
       serviceFailedRef.current = false;
+
+      // Determine initial editor collapse state
+      if (!editPost) {
+        // New post — editor always expanded
+        setIsContentExpanded(true);
+      } else {
+        // Existing post — collapse if above threshold
+        const effectiveLength = getEffectiveContentLength(editPost?.contentHtml || '');
+        setIsContentExpanded(effectiveLength < BLOG_CONTENT_COLLAPSE_THRESHOLD);
+      }
     }
   }, [editPost, isOpen, resetProgress]);
 
@@ -118,7 +139,7 @@ function BlogPublishModal({
       return;
     }
 
-    if (!stripHtml(form.contentHtml)) {
+    if (isEmptyContent(form.contentHtml)) {
       setError('Write the blog post content before publishing.');
       return;
     }
@@ -351,21 +372,32 @@ function BlogPublishModal({
             </label>
 
             <div className={styles.fieldGroup}>
-              <span>Content</span>
-              {form.contentHtml ? (
-                <div className={styles.contentPreview}>
-                  <div className={styles.contentPreviewText}>
-                    {form.contentHtml
-                      .replace(/<[^>]*>/g, ' ')
-                      .replace(/\s+/g, ' ')
-                      .trim()
-                      .slice(0, 200) || 'Content ready.'}
-                    {form.contentHtml.replace(/<[^>]*>/g, ' ').trim().length > 200 ? '…' : ''}
+              <div className={styles.contentHeader}>
+                <span>Content</span>
+                {isEditMode && (
+                  <button
+                    type="button"
+                    className={styles.collapseToggle}
+                    onClick={() => setIsContentExpanded((prev) => !prev)}
+                    aria-label={isContentExpanded ? 'Collapse editor' : 'Expand editor'}
+                  >
+                    {isContentExpanded ? <FaChevronUp size={14} /> : <FaChevronDown size={14} />}
+                  </button>
+                )}
+              </div>
+
+              {!isContentExpanded ? (
+                /* Collapsed summary (only for existing posts above threshold) */
+                <div className={styles.contentSummary}>
+                  <div className={styles.contentSummaryText}>
+                    Current content: approximately{' '}
+                    {getEffectiveContentLength(form.contentHtml).toLocaleString()}{' '}
+                    characters
                   </div>
                   <button
                     type="button"
                     className={styles.editContentButton}
-                    onClick={() => setIsRichTextOpen(true)}
+                    onClick={() => setIsContentExpanded(true)}
                     disabled={isFormDisabled}
                   >
                     <FaEdit />
@@ -373,15 +405,17 @@ function BlogPublishModal({
                   </button>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  className={styles.writeContentButton}
-                  onClick={() => setIsRichTextOpen(true)}
-                  disabled={isFormDisabled}
-                >
-                  <FaEdit />
-                  <span>Write content</span>
-                </button>
+                /* Inline rich-text editor */
+                <div className={styles.inlineEditor}>
+                  <RichTextEditor
+                    value={form.contentHtml}
+                    ownerName={ownerName}
+                    accountNames={accountNames}
+                    onChange={(nextContent) => updateField('contentHtml', nextContent)}
+                    placeholder="Write your blog post…"
+                    disabled={isFormDisabled}
+                  />
+                </div>
               )}
             </div>
 
@@ -413,19 +447,6 @@ function BlogPublishModal({
           </form>
         </div>
       </div>
-
-      {/* ---- Rich-text editing modal ---- */}
-      <RichTextModal
-        isOpen={isRichTextOpen}
-        initialHtml={form.contentHtml}
-        ownerName={ownerName}
-        accountNames={accountNames}
-        onConfirm={(html) => {
-          updateField('contentHtml', html);
-          setIsRichTextOpen(false);
-        }}
-        onClose={() => setIsRichTextOpen(false)}
-      />
 
       {/* ---- Progress modal (create and edit modes) ---- */}
       <PublishProgressModal

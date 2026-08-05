@@ -128,9 +128,54 @@
   cursor: wait;
 }
 
-/* ── Rich-text content trigger ─────────────────────────── */
+/* ── Inline rich-text editor + accordion ─────────────────── */
 
-.writeContentButton,
+.contentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.collapseToggle {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+  color: #555;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.collapseToggle:hover {
+  background: #f0f0f0;
+}
+
+/* Collapsed summary (long content) */
+
+.contentSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  background: #fafafa;
+}
+
+.contentSummaryText {
+  flex: 1;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
 .editContentButton {
   display: inline-flex;
   align-items: center;
@@ -143,49 +188,22 @@
   color: #333;
   font: inherit;
   font-weight: 700;
+  font-size: 0.88rem;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
-}
-
-.writeContentButton {
-  min-height: 120px;
-  justify-content: center;
-  width: 100%;
-  border-style: dashed;
-  font-size: 0.95rem;
-}
-
-.writeContentButton:hover {
-  background: #f5f5f5;
-  border-color: #bbb;
-}
-
-.editContentButton {
-  font-size: 0.88rem;
+  white-space: nowrap;
 }
 
 .editContentButton:hover {
   background: #f0f0f0;
 }
 
-.contentPreview {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+/* Inline editor wrapper */
+
+.inlineEditor {
   border: 1px solid #d9d9d9;
   border-radius: 8px;
-  padding: 0.85rem 1rem;
-  background: #fafafa;
-}
-
-.contentPreviewText {
-  flex: 1;
-  color: #555;
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1.5;
-  word-break: break-word;
+  overflow: visible;
 }
 
 @media (max-width: 760px) {
@@ -193,7 +211,7 @@
     grid-template-columns: 1fr;
   }
 
-  .contentPreview {
+  .contentSummary {
     flex-direction: column;
     align-items: stretch;
   }
