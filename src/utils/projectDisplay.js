@@ -1,6 +1,6 @@
 export const PROJECT_STATUS_LABELS = {
   idea: 'Idea',
-  active: 'Active',
+  active: 'In Progress',
   paused: 'Paused',
   released: 'Released',
 };

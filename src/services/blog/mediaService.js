@@ -9,6 +9,7 @@ import {
   toVideoIdentifier,
 } from '../qdn/identifiers';
 import { waitForResourceReady } from '../qdn/qdnService';
+import { prepareUploadFilename } from '../../utils/filenameUtils';
 
 export const MEDIA_LIMITS = {
   image: {
@@ -47,16 +48,24 @@ const publishFileResource = async ({
   ownerName,
   service,
   identifier,
-  title,
 }) => {
+  const { originalFilename, technicalFilename } = prepareUploadFilename(file.name);
+
+  console.debug('[Upload filename]', {
+    originalFilename,
+    technicalFilename,
+    identifier,
+    service,
+  });
+
   await requestQortium({
     action: 'PUBLISH_QDN_RESOURCE',
     service,
     name: ownerName,
     identifier,
-    filename: file.name,
+    filename: technicalFilename,
     data64: await fileToBase64(file),
-    title,
+    title: originalFilename,
     description: `${file.type || 'application/octet-stream'} - ${formatBytes(file.size)}`,
   });
 
@@ -66,18 +75,20 @@ const publishFileResource = async ({
     service,
     name: ownerName,
     identifier,
-    filename: file.name,
+    filename: originalFilename,
     mimeType: file.type || 'application/octet-stream',
     size: file.size,
   };
 };
 
 const createPendingMedia = (type, file, ownerName, service, identifier) => {
+  const { originalFilename } = prepareUploadFilename(file.name);
+
   const ref = {
     service,
     name: ownerName,
     identifier,
-    filename: file.name,
+    filename: originalFilename,
     mimeType: file.type || 'application/octet-stream',
     size: file.size,
   };
@@ -90,9 +101,9 @@ const createPendingMedia = (type, file, ownerName, service, identifier) => {
       service,
       name: ownerName,
       identifier,
-      filename: file.name,
+      filename: originalFilename,
       file,
-      title: file.name,
+      title: originalFilename,
       description: `${file.type || 'application/octet-stream'} - ${formatBytes(file.size)}`,
     },
   };

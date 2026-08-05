@@ -12,6 +12,7 @@ import {
   validateBatchResult,
 } from './qdnResourceService';
 import { getCurrentUserProfile } from './videoService';
+import { prepareUploadFilename } from '../utils/filenameUtils';
 
 export { getCurrentUserProfile };
 
@@ -406,6 +407,7 @@ const prepareCoverPayload = async ({ file, identifier, authorName }) => {
 
   const coverId = `${identifier}_c`;
   const coverData64 = await renderCoverBase64(file);
+  const { originalFilename, technicalFilename } = prepareUploadFilename(file.name);
 
   return {
     coverId,
@@ -414,7 +416,8 @@ const prepareCoverPayload = async ({ file, identifier, authorName }) => {
       service: COVER_SERVICE,
       name: authorName,
       identifier: coverId,
-      filename: file.name || '',
+      filename: technicalFilename,
+      originalFilename,
     },
   };
 };
